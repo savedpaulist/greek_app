@@ -29,6 +29,8 @@ jobs:
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ hashFiles('Dioxus.toml') }}
 
       - name: Install system dependencies
         run: sudo apt-get install -y imagemagick
@@ -64,6 +66,9 @@ jobs:
           sed -i 's|/\./assets/|/greek_app/assets/|g' dist/assets/*.js
           sed -i 's|"/assets/|"/greek_app/assets/|g'  dist/assets/*.js
           sed -i "s|'/assets/|'/greek_app/assets/|g"  dist/assets/*.js
+
+          # Inject <base href> so Dioxus WebHistory picks up the subpath from the DOM
+          sed -i 's|<head>|<head>\n    <base href="/greek_app/">|' dist/index.html
 
           echo "=== dist/index.html after fix ==="
           cat dist/index.html
