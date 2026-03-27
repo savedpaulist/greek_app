@@ -565,12 +565,37 @@ body::-webkit-scrollbar {
   -webkit-tap-highlight-color: transparent;
 }
 .mc-choice:not(:disabled):hover { border-color: var(--accent); background: var(--bg2); }
-.mc-choice:focus, .mc-choice:focus-visible { outline: none; border-color: var(--border); background: var(--bg3); }
 
 .mc-choice__grammar {
   text-align: left;
   line-height: 1.35;
 }
+
+/* ── Feedback panel (replaces disabled buttons during delay) ─────────────
+   Choice buttons are absent from the DOM during this phase, so the mobile
+   browser cannot transfer focus to a "same position" button in the next
+   question. */
+.feedback-panel {
+  width: 100%;
+  padding: 24px 20px;
+  border-radius: var(--radius-sm);
+  border: 2px solid;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.feedback-panel--correct {
+  border-color: var(--correct);
+  background: color-mix(in srgb, var(--correct) 15%, var(--bg2));
+}
+.feedback-panel--wrong {
+  border-color: var(--wrong);
+  background: color-mix(in srgb, var(--wrong) 15%, var(--bg2));
+}
+.feedback-panel__icon   { font-size: 2rem; line-height: 1; }
+.feedback-panel__answer { font-size: 1.3rem; color: var(--fg); }
 
 .flashcard__reveal { text-align: center; width: 100%; }
 .flashcard__answer { font-size: 1.8rem; margin-bottom: 16px; color: var(--correct); }

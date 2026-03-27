@@ -40,12 +40,20 @@ async fn sleep_ms(ms: i32) {
 #[cfg(not(target_arch = "wasm32"))]
 async fn sleep_ms(_ms: i32) {}
 
-// ── Feedback state ────────────────────────────────────────────────────────
+// ── Phase state machine ───────────────────────────────────────────────────
+//
+// Key invariant: choice buttons exist in the DOM ONLY during `Choosing`.
+// During `Feedback`, they are fully absent — so the mobile browser has no
+// element at position #N to re-focus after the DOM update.
 
-#[derive(Clone, Copy, PartialEq)]
-enum Feedback {
-    Correct,
-    Wrong(i64), // form_id of the wrong choice the user picked
+#[derive(Clone, PartialEq)]
+enum CardPhase {
+    /// Showing 6 multiple-choice buttons — interactive.
+    Choosing,
+    /// Brief feedback panel (NO choice buttons in DOM) — auto-advances.
+    Feedback { is_correct: bool },
+    /// User clicked "Show answer" — showing the answer with rating buttons.
+    Revealed,
 }
 
 // ── FlashcardView ─────────────────────────────────────────────────────────
@@ -69,9 +77,8 @@ pub fn FlashcardView(reverse: bool) -> Element {
 
     let total = forms.len();
     let session_count = total.min(SESSION_SIZE);
+    let mut phase = use_signal(|| CardPhase::Choosing);
     let mut index = use_signal(|| 0usize);
-    let mut revealed = use_signal(|| false);
-    let mut feedback: Signal<Option<Feedback>> = use_signal(|| None);
     let mut session_correct: Signal<u32> = use_signal(|| 0);
     let mut shuffle_seed = use_signal(fresh_shuffle_seed);
 
@@ -96,8 +103,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                     onclick: move |_| {
                         *index.write() = 0;
                         *session_correct.write() = 0;
-                        *revealed.write() = false;
-                        *feedback.write() = None;
+                        *phase.write() = CardPhase::Choosing;
                         *shuffle_seed.write() = fresh_shuffle_seed();
                     },
                     "{t(UiKey::FlashcardRetry, lang.clone())}"
@@ -109,16 +115,28 @@ pub fn FlashcardView(reverse: bool) -> Element {
     let real_idx = order[*index.read() % total];
     let current_form = forms[real_idx].clone();
     let current_lemma = state.lemma_by_id(current_form.lemma_id);
-    let revealed_answer = if reverse {
+
+    // The text that represents "the correct answer" shown in feedback / reveal.
+    let answer_text = if reverse {
         current_form.test_prompt_greek()
     } else {
         current_form.grammar_label(&morph_lang)
     };
+
     let form_choices = if reverse {
         build_same_lemma_choices(&forms, &current_form, 6)
     } else {
         build_same_lemma_grammar_choices(&forms, &current_form, 6)
     };
+
+    // Pre-read phase so we can branch without holding the signal guard.
+    let phase_val = phase.read().clone();
+    let feedback_correct: Option<bool> = match &phase_val {
+        CardPhase::Feedback { is_correct } => Some(*is_correct),
+        _ => None,
+    };
+    let is_choosing = matches!(phase_val, CardPhase::Choosing);
+    let is_revealed = matches!(phase_val, CardPhase::Revealed);
 
     rsx! {
         div { class: "flashcard-screen",
@@ -134,7 +152,8 @@ pub fn FlashcardView(reverse: bool) -> Element {
             }
 
             div { class: if reverse { "flashcard flashcard--reverse" } else { "flashcard" },
-                // Prompt
+
+                // Prompt — always visible, independent of phase.
                 div { class: "flashcard__prompt",
                     if reverse {
                         if let Some(lemma) = &current_lemma {
@@ -153,105 +172,52 @@ pub fn FlashcardView(reverse: bool) -> Element {
                     }
                 }
 
-                // Answer area
+                // Answer area — switches between three mutually-exclusive phases.
                 div { class: "flashcard__answers",
-                    if *revealed.read() {
-                        div { class: "flashcard__reveal",
-                            p { class: "flashcard__answer greek-text",
-                                "{revealed_answer}"
-                            }
-                            div { class: "flashcard__buttons",
-                                button {
-                                    class: "btn btn--danger",
-                                    onclick: move |_| {
-                                        state.record_answer(current_form.id, 1);
-                                        let next = *index.read() + 1;
-                                        *index.write() = next;
-                                        *revealed.write() = false;
-                                        *feedback.write() = None;
-                                    },
-                                    "{t(UiKey::FlashcardNoKnow, lang.clone())}"
-                                }
-                                button {
-                                    class: "btn btn--warning",
-                                    onclick: move |_| {
-                                        state.record_answer(current_form.id, 3);
-                                        *session_correct.write() += 1;
-                                        let next = *index.read() + 1;
-                                        *index.write() = next;
-                                        *revealed.write() = false;
-                                        *feedback.write() = None;
-                                    },
-                                    "{t(UiKey::FlashcardHard, lang.clone())}"
-                                }
-                                button {
-                                    class: "btn btn--success",
-                                    onclick: move |_| {
-                                        state.record_answer(current_form.id, 5);
-                                        *session_correct.write() += 1;
-                                        let next = *index.read() + 1;
-                                        *index.write() = next;
-                                        *revealed.write() = false;
-                                        *feedback.write() = None;
-                                    },
-                                    "{t(UiKey::FlashcardKnow, lang.clone())}"
-                                }
-                            }
-                        }
-                    } else {
+
+                    // ── CHOOSING: 6 mc-choice buttons ─────────────────────────
+                    if is_choosing {
                         div { class: "mc-choices",
                             for choice in form_choices {
                                 {
                                     let is_correct_choice = choice.id == current_form.id;
-                                    let chosen_id = choice.id;
-                                    let fb = *feedback.read();
-                                    let btn_class = match fb {
-                                        Some(Feedback::Correct) if is_correct_choice =>
-                                            "mc-choice mc-choice--correct",
-                                        Some(Feedback::Wrong(id)) if id == chosen_id =>
-                                            "mc-choice mc-choice--wrong",
-                                        Some(Feedback::Wrong(_)) if is_correct_choice =>
-                                            "mc-choice mc-choice--correct",
-                                        _ => "mc-choice",
+                                    let choice_text = if reverse {
+                                        choice.test_prompt_greek()
+                                    } else {
+                                        choice.grammar_label(&morph_lang)
                                     };
-                                    let locked = fb.is_some();
                                     rsx! {
                                         button {
-                                            class: "{btn_class}",
-                                            disabled: locked,
+                                            class: "mc-choice",
                                             onclick: move |_| {
-                                                if feedback.read().is_some() { return; }
+                                                // Guard: only fire once per question.
+                                                if !matches!(*phase.read(), CardPhase::Choosing) {
+                                                    return;
+                                                }
                                                 let q = quality_from_answer(is_correct_choice, false);
                                                 state.record_answer(current_form.id, q);
                                                 if is_correct_choice {
                                                     *session_correct.write() += 1;
-                                                    *feedback.write() = Some(Feedback::Correct);
-                                                    let mut fb = feedback;
-                                                    let mut idx = index;
-                                                    spawn(async move {
-                                                        sleep_ms(800).await;
-                                                        blur_active_element();
-                                                        *fb.write() = None;
-                                                        *idx.write() += 1;
-                                                    });
-                                                } else {
-                                                    *feedback.write() = Some(Feedback::Wrong(chosen_id));
-                                                    let mut fb = feedback;
-                                                    let mut idx = index;
-                                                    let mut rev = revealed;
-                                                    spawn(async move {
-                                                        sleep_ms(1500).await;
-                                                        blur_active_element();
-                                                        *fb.write() = None;
-                                                        *rev.write() = false;
-                                                        *idx.write() += 1;
-                                                    });
                                                 }
+                                                // Transition to Feedback — choice buttons leave DOM.
+                                                *phase.write() = CardPhase::Feedback {
+                                                    is_correct: is_correct_choice,
+                                                };
+                                                let delay = if is_correct_choice { 800_i32 } else { 1500_i32 };
+                                                let mut ph = phase;
+                                                let mut idx = index;
+                                                spawn(async move {
+                                                    sleep_ms(delay).await;
+                                                    // Increment index first so the new question
+                                                    // data is ready when buttons re-appear.
+                                                    *idx.write() += 1;
+                                                    *ph.write() = CardPhase::Choosing;
+                                                });
                                             },
                                             if reverse {
-                                                span { class: "greek-text", "{choice.test_prompt_greek()}" }
+                                                span { class: "greek-text", "{choice_text}" }
                                             } else {
-                                                span { class: "mc-choice__grammar", "{choice.grammar_label(&morph_lang)}" }
+                                                span { class: "mc-choice__grammar", "{choice_text}" }
                                             }
                                         }
                                     }
@@ -260,9 +226,61 @@ pub fn FlashcardView(reverse: bool) -> Element {
                         }
                         button {
                             class: "btn btn--ghost btn--sm",
-                            disabled: feedback.read().is_some(),
-                            onclick: move |_| *revealed.write() = true,
+                            onclick: move |_| *phase.write() = CardPhase::Revealed,
                             "{t(UiKey::FlashcardShow, lang.clone())}"
+                        }
+                    }
+
+                    // ── FEEDBACK: no choice buttons in DOM ────────────────────
+                    if let Some(is_correct) = feedback_correct {
+                        div {
+                            class: if is_correct {
+                                "feedback-panel feedback-panel--correct"
+                            } else {
+                                "feedback-panel feedback-panel--wrong"
+                            },
+                            span { class: "feedback-panel__icon",
+                                if is_correct { "✓" } else { "✗" }
+                            }
+                            p { class: "feedback-panel__answer greek-text", "{answer_text}" }
+                        }
+                    }
+
+                    // ── REVEALED: answer text + rating buttons ─────────────────
+                    if is_revealed {
+                        div { class: "flashcard__reveal",
+                            p { class: "flashcard__answer greek-text", "{answer_text}" }
+                            div { class: "flashcard__buttons",
+                                button {
+                                    class: "btn btn--danger",
+                                    onclick: move |_| {
+                                        state.record_answer(current_form.id, 1);
+                                        *index.write() += 1;
+                                        *phase.write() = CardPhase::Choosing;
+                                    },
+                                    "{t(UiKey::FlashcardNoKnow, lang.clone())}"
+                                }
+                                button {
+                                    class: "btn btn--warning",
+                                    onclick: move |_| {
+                                        state.record_answer(current_form.id, 3);
+                                        *session_correct.write() += 1;
+                                        *index.write() += 1;
+                                        *phase.write() = CardPhase::Choosing;
+                                    },
+                                    "{t(UiKey::FlashcardHard, lang.clone())}"
+                                }
+                                button {
+                                    class: "btn btn--success",
+                                    onclick: move |_| {
+                                        state.record_answer(current_form.id, 5);
+                                        *session_correct.write() += 1;
+                                        *index.write() += 1;
+                                        *phase.write() = CardPhase::Choosing;
+                                    },
+                                    "{t(UiKey::FlashcardKnow, lang.clone())}"
+                                }
+                            }
                         }
                     }
                 }
@@ -330,18 +348,6 @@ fn separate_adjacent_lemmas(order: &mut [usize], forms: &[Form], seed: u64) {
 
         if let Some(target) = swap_with {
             order.swap(idx, target);
-        }
-    }
-}
-
-fn blur_active_element() {
-    #[cfg(target_arch = "wasm32")]
-    {
-        use wasm_bindgen::JsCast;
-        if let Some(doc) = web_sys::window().and_then(|w| w.document()) {
-            if let Some(el) = doc.active_element() {
-                let _ = el.dyn_into::<web_sys::HtmlElement>().map(|el| el.blur());
-            }
         }
     }
 }
