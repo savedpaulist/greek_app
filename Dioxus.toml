@@ -5,6 +5,9 @@
 # HTML title tag content
 title = "morph-app"
 
+# GitHub Pages subdirectory prefix (baked into WASM binary at build time)
+base_path = "greek_app"
+
 # include `assets` in web platform
 [web.resource]
 
@@ -19,7 +22,3 @@ script = []
 # Javascript code file
 # serve: [dev-server] only
 script = []
-
-[web.config]
-# Замените 'название_репозитория' на реальное имя вашего репозитория на GitHub
-base_path = "greek_app"

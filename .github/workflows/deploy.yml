@@ -52,25 +52,23 @@ jobs:
             echo "ERROR: no build output found"; exit 1
           fi
 
+      - name: Debug build output (raw)
+        run: |
+          echo "=== dist/index.html (raw) ==="
+          cat dist/index.html
+          echo "=== dist/assets/ ==="
+          ls dist/assets/
+
       - name: Fix absolute asset paths for GitHub Pages subdirectory
         run: |
-          # Dioxus uses two path formats in generated files:
-          #   index.html  → /./assets/...   (preload + script src)
-          #   JS bundle   → /assets/...     (WASM fetch URL, no ./)
-          # Both resolve from the domain root and miss the /greek_app/ prefix.
-
-          # Fix index.html (/./assets/ pattern)
+          # Dioxus generates /./assets/ in index.html and /assets/ in JS bundle.
+          # Both resolve from domain root and miss the /greek_app/ prefix.
+          # base_path in [web.app] fixes the router; these sed calls fix the URLs.
           sed -i 's|/\./assets/|/greek_app/assets/|g' dist/index.html
-
-          # Fix JS bundle: /./assets/ and plain /assets/ (WASM URL)
           sed -i 's|/\./assets/|/greek_app/assets/|g' dist/assets/*.js
           sed -i 's|"/assets/|"/greek_app/assets/|g'  dist/assets/*.js
           sed -i "s|'/assets/|'/greek_app/assets/|g"  dist/assets/*.js
-
-          # Inject <base href> so Dioxus WebHistory picks up the subpath from the DOM
-          sed -i 's|<head>|<head>\n    <base href="/greek_app/">|' dist/index.html
-
-          echo "=== dist/index.html after fix ==="
+          echo "=== dist/index.html (after fix) ==="
           cat dist/index.html
 
       - name: Generate PWA icons
