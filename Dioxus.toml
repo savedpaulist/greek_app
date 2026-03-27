@@ -19,3 +19,7 @@ script = []
 # Javascript code file
 # serve: [dev-server] only
 script = []
+
+[web.config]
+# Замените 'название_репозитория' на реальное имя вашего репозитория на GitHub
+base_path = "greek_app"

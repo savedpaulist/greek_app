@@ -1,0 +1,51 @@
+name: Deploy Dioxus WASM
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install Dioxus CLI
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-sh | sh
+          cargo binstall dioxus-cli --force
+
+      - name: Build Project
+        # Флаг --release оптимизирует размер WASM
+        run: dx build --release --platform web
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # По умолчанию Dioxus собирает билд в папку target/dx/[имя_проекта]/release/web/public/
+          # Проверьте точный путь после локальной сборки 'dx build'
+          path: './target/dx/${{ github.event.repository.name }}/release/web/public/'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
