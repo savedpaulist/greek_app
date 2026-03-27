@@ -92,12 +92,18 @@ jobs:
       - name: Inject SW cache version and precache manifest
         run: |
           CACHE_VER=$(git rev-parse --short HEAD)
-          # Build JS array entries for every hashed asset in dist/assets/
-          ASSETS=$(ls dist/assets/ | awk '{printf "  \"/greek_app/assets/%s\",\n", $0}')
-          # Strip trailing comma+newline from last entry
-          ASSETS=$(echo "$ASSETS" | sed '$ s/,$//')
           sed -i "s|'__CACHE_VERSION__'|'greek-app-${CACHE_VER}'|g" dist/sw.js
-          sed -i "s|  '__PRECACHE_ASSETS__'|${ASSETS}|g" dist/sw.js
+          python3 << 'EOF'
+          import os
+          assets = ',\n'.join(
+              f'  "/greek_app/assets/{f}"'
+              for f in sorted(os.listdir('dist/assets'))
+          )
+          path = 'dist/sw.js'
+          sw = open(path).read()
+          sw = sw.replace("  '__PRECACHE_ASSETS__'", assets)
+          open(path, 'w').write(sw)
+          EOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
