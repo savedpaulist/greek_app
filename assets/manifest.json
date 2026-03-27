@@ -1,0 +1,25 @@
+{
+  "name": "Greek Morphology",
+  "short_name": "GreekApp",
+  "description": "Greek morphology flashcard and study app",
+  "start_url": "/greek_app/",
+  "scope": "/greek_app/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/greek_app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/greek_app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

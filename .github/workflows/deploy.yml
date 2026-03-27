@@ -30,6 +30,9 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Install system dependencies
+        run: sudo apt-get install -y librsvg2-bin
+
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --locked
 
@@ -39,13 +42,40 @@ jobs:
       - name: Build Project
         run: dx build --release --platform web
 
+      - name: Normalize dist directory
+        run: |
+          if [ -d "dist" ]; then
+            echo "Found: dist/"
+          elif [ -d "target/dx/morph-app/release/web/public" ]; then
+            echo "Found: target/dx/morph-app/release/web/public — symlinking to dist/"
+            ln -s "$(pwd)/target/dx/morph-app/release/web/public" dist
+          else
+            echo "=== Build output search ==="
+            find . -name "index.html" \
+              -not -path "./.git/*" \
+              -not -path "./target/debug/*" \
+              -not -path "./target/wasm-dev/*" \
+              | head -10
+            exit 1
+          fi
+
+      - name: Generate PWA icons
+        run: |
+          rsvg-convert -w 192 -h 192 assets/icons/icon.svg -o dist/icon-192.png
+          rsvg-convert -w 512 -h 512 assets/icons/icon.svg -o dist/icon-512.png
+
+      - name: Copy PWA assets to dist root
+        run: |
+          cp assets/manifest.json dist/manifest.json
+          cp assets/sw.js dist/sw.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: 'dist'
 
   deploy:
     needs: build

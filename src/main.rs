@@ -18,6 +18,15 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 const THEMES_CSS: Asset = asset!("/assets/styles/themes.css");
 const GOOGLE_FONTS: &str = "https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Literata:wght@400;600;700&family=Lora:wght@400;600;700&family=Noto+Sans:wght@400;600;700&family=Noto+Serif:wght@400;600;700&display=swap";
 
+const SW_REGISTER: &str = r#"
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/greek_app/sw.js', { scope: '/greek_app/' })
+      .catch(function(e) { console.warn('SW registration failed:', e); });
+  });
+}
+"#;
+
 fn main() {
     dioxus::launch(App);
 }
@@ -33,11 +42,17 @@ fn App() -> Element {
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        document::Link { rel: "manifest", href: "/greek_app/manifest.json" }
+        document::Meta { name: "theme-color", content: "#1a1a2e" }
+        document::Meta { name: "apple-mobile-web-app-capable", content: "yes" }
+        document::Meta { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" }
+        document::Link { rel: "apple-touch-icon", href: "/greek_app/icon-192.png" }
         document::Link { rel: "preconnect", href: "https://fonts.googleapis.com" }
         document::Link { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous" }
         document::Link { rel: "stylesheet", href: GOOGLE_FONTS }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: THEMES_CSS }
+        document::Script { dangerous_inner_html: SW_REGISTER }
         Router::<Route> {}
     }
 }
