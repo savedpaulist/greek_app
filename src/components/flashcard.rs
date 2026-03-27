@@ -226,8 +226,8 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                                     let mut idx = index;
                                                     spawn(async move {
                                                         sleep_ms(800).await;
-                                                        *idx.write() += 1;
                                                         *fb.write() = None;
+                                                        *idx.write() += 1;
                                                     });
                                                 } else {
                                                     *feedback.write() = Some(Feedback::Wrong(chosen_id));
@@ -236,9 +236,9 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                                     let mut rev = revealed;
                                                     spawn(async move {
                                                         sleep_ms(1500).await;
-                                                        *idx.write() += 1;
                                                         *fb.write() = None;
                                                         *rev.write() = false;
+                                                        *idx.write() += 1;
                                                     });
                                                 }
                                             },

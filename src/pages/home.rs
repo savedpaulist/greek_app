@@ -55,7 +55,7 @@ pub fn HomePage() -> Element {
                             "Карточки"
                             if has_filter { span { class: "mode-card__filter-badge", " (фильтр)" } }
                         }
-                        p { class: "mode-card__desc", "Слово → форма: 4 варианта ответа" }
+                        p { class: "mode-card__desc", "Слово → форма" }
                     }
                 }
                 Link { to: Route::FlashcardReverse {}, class: "mode-card",

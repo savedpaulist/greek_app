@@ -1,9 +1,11 @@
-const CACHE_NAME = 'greek-app-v1';
+const CACHE_NAME = '__CACHE_VERSION__';
 const BASE = '/greek_app';
 
 const PRECACHE = [
   BASE + '/',
   BASE + '/index.html',
+  BASE + '/manifest.json',
+  '__PRECACHE_ASSETS__'
 ];
 
 self.addEventListener('install', (event) => {
@@ -23,7 +25,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests within our scope
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
@@ -36,6 +37,10 @@ self.addEventListener('fetch', (event) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match(BASE + '/');
+        }
       });
     })
   );

@@ -542,9 +542,9 @@ body::-webkit-scrollbar {
 .flashcard__answers { display: flex; flex-direction: column; gap: 12px; align-items: center; }
 
 .mc-choices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
 }
 
@@ -552,14 +552,15 @@ body::-webkit-scrollbar {
   background: var(--bg3);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 12px;
+  padding: 10px 14px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--fg);
-  min-height: 56px;
+  min-height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  text-align: left;
   transition: border-color 0.15s, background 0.15s;
 }
 .mc-choice:not(:disabled):hover { border-color: var(--accent); background: var(--bg2); }
@@ -567,7 +568,7 @@ body::-webkit-scrollbar {
 .mc-choice:focus:not(:focus-visible) { border-color: var(--border); background: var(--bg3); }
 
 .mc-choice__grammar {
-  text-align: center;
+  text-align: left;
   line-height: 1.35;
 }
 
@@ -1022,34 +1023,20 @@ body::-webkit-scrollbar {
 .onboarding-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 /* ── Answer feedback colors ──────────────────────────────────────────── */
-.mc-choice--correct,
-.mc-choice--wrong {
-  color: var(--fg);
-  background: var(--bg2);
-}
-
 .mc-choice--correct {
+  background: color-mix(in srgb, var(--correct) 28%, var(--bg2));
   border-color: var(--correct);
+  border-width: 2px;
+  color: var(--fg);
   box-shadow: inset 0 0 0 2px var(--correct);
 }
 
 .mc-choice--wrong {
+  background: color-mix(in srgb, var(--wrong) 28%, var(--bg2));
   border-color: var(--wrong);
+  border-width: 2px;
+  color: var(--fg);
   box-shadow: inset 0 0 0 2px var(--wrong);
-}
-
-@supports (background: color-mix(in srgb, white 50%, black)) {
-  .mc-choice--correct {
-    background: color-mix(in srgb, var(--correct) 22%, var(--bg2));
-    border-color: color-mix(in srgb, var(--correct) 55%, var(--border));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--correct) 30%, transparent);
-  }
-
-  .mc-choice--wrong {
-    background: color-mix(in srgb, var(--wrong) 20%, var(--bg2));
-    border-color: color-mix(in srgb, var(--wrong) 52%, var(--border));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wrong) 28%, transparent);
-  }
 }
 
 .mc-choice:disabled { cursor: not-allowed; }
@@ -1236,7 +1223,7 @@ body::-webkit-scrollbar {
   }
   .home-stats { grid-template-columns: repeat(4, 1fr); }
   .flashcard, .fillin-card { max-width: 580px; margin: 0 auto; }
-  .mc-choices { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .mc-choices { gap: 10px; }
   .theme-grid { grid-template-columns: repeat(4, 1fr); }
   .theme-color-grid { grid-template-columns: repeat(3, 1fr); }
   .sidebar--settings {
