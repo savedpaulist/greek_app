@@ -39,54 +39,23 @@ jobs:
       - name: Build Project
         run: dx build --release --platform web
 
-      - name: Find build output and show index.html
-        run: |
-          echo "=== All index.html files found after build ==="
-          find . -name "index.html" \
-            -not -path "./.git/*" \
-            -not -path "./target/debug/*" \
-            -not -path "./target/wasm-dev/*" \
-            -not -path "./target/wasm32-unknown-unknown/wasm-dev/*"
-
-          echo ""
-          echo "=== All files in likely output dirs ==="
-          for d in dist "dist/greek_app" "target/dx/morph-app/release/web/public"; do
-            if [ -d "$d" ]; then
-              echo "--- $d ---"
-              find "$d" -type f | sort
-            fi
-          done
-
       - name: Normalize dist to upload root
         run: |
-          # Dioxus with base_path="greek_app" may output to dist/greek_app/
-          # We need to upload the folder that contains index.html directly.
-          if [ -f "dist/index.html" ]; then
-            echo "dist/ is already correct"
-          elif [ -f "dist/greek_app/index.html" ]; then
-            echo "Moving dist/greek_app/ contents up to dist/"
-            cp -r dist/greek_app/. dist/
-          elif [ -d "target/dx/morph-app/release/web/public" ]; then
+          if [ -d "target/dx/morph-app/release/web/public" ]; then
+            mkdir -p dist
             cp -r target/dx/morph-app/release/web/public/. dist/
-            mkdir -p dist
+          elif [ -f "dist/index.html" ]; then
+            echo "dist/ already correct"
           else
-            INDEX=$(find . -name "index.html" \
-              -not -path "./.git/*" \
-              -not -path "./target/debug/*" \
-              -not -path "./target/wasm-dev/*" \
-              | head -1)
-            [ -z "$INDEX" ] && echo "ERROR: no index.html found" && exit 1
-            FOUND="$(dirname "$INDEX")"
-            echo "Copying from $FOUND to dist/"
-            mkdir -p dist
-            cp -r "$FOUND"/. dist/
+            echo "ERROR: no build output found"; exit 1
           fi
 
-          echo ""
-          echo "=== Final dist/ structure ==="
-          find dist -type f | sort
-          echo ""
-          echo "=== dist/index.html ==="
+      - name: Fix absolute asset paths for GitHub Pages subdirectory
+        run: |
+          # Dioxus generates /./assets/... (absolute from domain root).
+          # Replace with /greek_app/assets/... so files resolve under the Pages subpath.
+          sed -i 's|"/\./|"/greek_app/|g' dist/index.html
+          echo "=== dist/index.html after fix ==="
           cat dist/index.html
 
       - name: Generate PWA icons
