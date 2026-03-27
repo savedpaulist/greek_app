@@ -562,10 +562,10 @@ body::-webkit-scrollbar {
   justify-content: flex-start;
   text-align: left;
   transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 .mc-choice:not(:disabled):hover { border-color: var(--accent); background: var(--bg2); }
-.mc-choice:focus { outline: none; }
-.mc-choice:focus:not(:focus-visible) { border-color: var(--border); background: var(--bg3); }
+.mc-choice:focus, .mc-choice:focus-visible { outline: none; border-color: var(--border); background: var(--bg3); }
 
 .mc-choice__grammar {
   text-align: left;

@@ -33,7 +33,7 @@ jobs:
           key: ${{ hashFiles('Dioxus.toml') }}
 
       - name: Install system dependencies
-        run: sudo apt-get install -y imagemagick
+        run: pip3 install --quiet pillow
 
       - name: Install Dioxus CLI
         run: cargo install dioxus-cli --version "^0.7" --locked
@@ -73,14 +73,15 @@ jobs:
 
       - name: Generate PWA icons
         run: |
-          # Pepe cut → 192×192 logo (tight crop from center)
-          convert "assets/icons/Pepe cut.png" \
-            -resize 192x192^ -gravity center -extent 192x192 \
-            dist/icon-192.png
-          # Pepe full → 512×512 (tight crop from center)
-          convert "assets/icons/Pepe full.png" \
-            -resize 512x512^ -gravity center -extent 512x512 \
-            dist/icon-512.png
+          python3 << 'PYEOF'
+          from PIL import Image
+          img = Image.open("assets/icon-pepe.png").convert("RGBA")
+          img.resize((192, 192), Image.LANCZOS).save("dist/icon-192.png", "PNG")
+          img.resize((512, 512), Image.LANCZOS).save("dist/icon-512.png", "PNG")
+          sizes = [(16,16),(32,32),(48,48)]
+          frames = [img.resize(s, Image.LANCZOS) for s in sizes]
+          frames[0].save("dist/favicon.ico", format="ICO", sizes=sizes, append_images=frames[1:])
+          PYEOF
 
       - name: Copy PWA assets to dist root
         run: |
