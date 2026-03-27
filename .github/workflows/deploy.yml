@@ -31,7 +31,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install system dependencies
-        run: sudo apt-get install -y librsvg2-bin
+        run: sudo apt-get install -y imagemagick
 
       - name: Install Dioxus CLI
         run: cargo install dioxus-cli --version "^0.7" --locked
@@ -52,17 +52,32 @@ jobs:
 
       - name: Fix absolute asset paths for GitHub Pages subdirectory
         run: |
-          # Dioxus generates /./assets/... (absolute from domain root) in both
-          # index.html and the JS bundle. Replace everywhere with /greek_app/assets/...
+          # Dioxus uses two path formats in generated files:
+          #   index.html  → /./assets/...   (preload + script src)
+          #   JS bundle   → /assets/...     (WASM fetch URL, no ./)
+          # Both resolve from the domain root and miss the /greek_app/ prefix.
+
+          # Fix index.html (/./assets/ pattern)
           sed -i 's|/\./assets/|/greek_app/assets/|g' dist/index.html
+
+          # Fix JS bundle: /./assets/ and plain /assets/ (WASM URL)
           sed -i 's|/\./assets/|/greek_app/assets/|g' dist/assets/*.js
+          sed -i 's|"/assets/|"/greek_app/assets/|g'  dist/assets/*.js
+          sed -i "s|'/assets/|'/greek_app/assets/|g"  dist/assets/*.js
+
           echo "=== dist/index.html after fix ==="
           cat dist/index.html
 
       - name: Generate PWA icons
         run: |
-          rsvg-convert -w 192 -h 192 assets/icons/icon.svg -o dist/icon-192.png
-          rsvg-convert -w 512 -h 512 assets/icons/icon.svg -o dist/icon-512.png
+          # Pepe cut → 192×192 logo (tight crop from center)
+          convert "assets/icons/Pepe cut.png" \
+            -resize 192x192^ -gravity center -extent 192x192 \
+            dist/icon-192.png
+          # Pepe full → 512×512 (tight crop from center)
+          convert "assets/icons/Pepe full.png" \
+            -resize 512x512^ -gravity center -extent 512x512 \
+            dist/icon-512.png
 
       - name: Copy PWA assets to dist root
         run: |
