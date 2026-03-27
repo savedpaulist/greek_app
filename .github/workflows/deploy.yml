@@ -52,9 +52,10 @@ jobs:
 
       - name: Fix absolute asset paths for GitHub Pages subdirectory
         run: |
-          # Dioxus generates /./assets/... (absolute from domain root).
-          # Replace with /greek_app/assets/... so files resolve under the Pages subpath.
-          sed -i 's|"/\./|"/greek_app/|g' dist/index.html
+          # Dioxus generates /./assets/... (absolute from domain root) in both
+          # index.html and the JS bundle. Replace everywhere with /greek_app/assets/...
+          sed -i 's|/\./assets/|/greek_app/assets/|g' dist/index.html
+          sed -i 's|/\./assets/|/greek_app/assets/|g' dist/assets/*.js
           echo "=== dist/index.html after fix ==="
           cat dist/index.html
 
