@@ -4,9 +4,12 @@ on:
   push:
     branches: ["main"]
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 env:
-  # Устраняем предупреждение о Node.js 20
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  DIOXUS_CONFIG_NON_INTERACTIVE: true
 
 permissions:
   contents: read
@@ -24,21 +27,25 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --locked
+
       - name: Install Dioxus CLI
-        run: |
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-sh | sh
-          cargo binstall dioxus-cli --force
+        run: cargo install dioxus-cli --version "^0.7" --locked
 
       - name: Build Project
-        # Добавляем --verbose для детального лога в случае падения
-        run: dx build --release --platform web --verbose
+        run: dx build --release --platform web
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Важно: проверьте, что папка dist или public действительно создается
-          # Обычно это: target/dx/[имя_проекта]/release/web/public
-          path: './target/dx/${{ github.event.repository.name }}/release/web/public/'
+          path: './dist'
 
   deploy:
     needs: build
@@ -46,6 +53,9 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
