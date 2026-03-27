@@ -33,14 +33,19 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get install -y librsvg2-bin
 
-      - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli --locked
-
       - name: Install Dioxus CLI
         run: cargo install dioxus-cli --version "^0.7" --locked
 
       - name: Build Project
         run: dx build --release --platform web
+
+      - name: Fix asset paths for GitHub Pages subdirectory
+        run: |
+          # Dioxus generates absolute paths like /assets/... which break when
+          # the app is served from a subdirectory /greek_app/ on GitHub Pages.
+          sed -i 's|"/assets/|"/greek_app/assets/|g' dist/index.html
+          echo "=== dist/index.html after fix ==="
+          cat dist/index.html
 
       - name: Normalize dist directory
         run: |
@@ -68,6 +73,8 @@ jobs:
         run: |
           cp assets/manifest.json dist/manifest.json
           cp assets/sw.js dist/sw.js
+          # 404.html needed for SPA routing on GitHub Pages
+          cp dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
