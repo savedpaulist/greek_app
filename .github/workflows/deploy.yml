@@ -39,30 +39,46 @@ jobs:
       - name: Build Project
         run: dx build --release --platform web
 
-      - name: Fix asset paths for GitHub Pages subdirectory
+      - name: Find and normalize dist directory
         run: |
-          # Dioxus generates absolute paths like /assets/... which break when
-          # the app is served from a subdirectory /greek_app/ on GitHub Pages.
-          sed -i 's|"/assets/|"/greek_app/assets/|g' dist/index.html
-          echo "=== dist/index.html after fix ==="
-          cat dist/index.html
+          echo "=== Searching for index.html ==="
+          find . -name "index.html" \
+            -not -path "./.git/*" \
+            -not -path "./target/debug/*" \
+            -not -path "./target/wasm-dev/*" \
+            -not -path "./target/wasm32-unknown-unknown/wasm-dev/*"
 
-      - name: Normalize dist directory
-        run: |
           if [ -d "dist" ]; then
-            echo "Found: dist/"
+            echo "Using: dist/"
           elif [ -d "target/dx/morph-app/release/web/public" ]; then
-            echo "Found: target/dx/morph-app/release/web/public — symlinking to dist/"
             ln -s "$(pwd)/target/dx/morph-app/release/web/public" dist
+            echo "Symlinked target/dx/morph-app/release/web/public → dist/"
           else
-            echo "=== Build output search ==="
-            find . -name "index.html" \
+            INDEX=$(find . -name "index.html" \
               -not -path "./.git/*" \
               -not -path "./target/debug/*" \
               -not -path "./target/wasm-dev/*" \
-              | head -10
-            exit 1
+              -not -path "./target/wasm32-unknown-unknown/wasm-dev/*" \
+              | head -1)
+            if [ -z "$INDEX" ]; then
+              echo "ERROR: could not find build output"
+              exit 1
+            fi
+            FOUND_DIR=$(dirname "$INDEX")
+            echo "Found build output at: $FOUND_DIR"
+            ln -s "$(pwd)/$FOUND_DIR" dist
           fi
+
+          echo "=== dist/ contents ==="
+          find dist -type f | sort
+
+      - name: Fix asset paths for GitHub Pages subdirectory
+        run: |
+          # Dioxus may generate absolute paths like /assets/... which break when
+          # served from a subdirectory /greek_app/ on GitHub Pages.
+          sed -i 's|"/assets/|"/greek_app/assets/|g' dist/index.html
+          echo "=== dist/index.html ==="
+          cat dist/index.html
 
       - name: Generate PWA icons
         run: |
