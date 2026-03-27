@@ -3,7 +3,6 @@ use dioxus::prelude::*;
 use crate::logic::diacritics::normalize;
 use crate::models::FilterParams;
 use crate::pages::settings::SettingsPanel;
-use crate::router::Route;
 use crate::state::AppState;
 
 fn is_overlay_layout() -> bool {
@@ -32,9 +31,11 @@ pub fn Sidebar() -> Element {
     let overlay_layout = is_overlay_layout();
 
     rsx! {
-        if overlay_layout && (filters_open || settings_open) {
+        // Transparent shield on desktop, dark backdrop on mobile — both intercept clicks
+        // so tapping outside the sidebar closes it without triggering page content.
+        if filters_open || settings_open {
             div {
-                class: "sidebar-backdrop",
+                class: if overlay_layout { "sidebar-backdrop" } else { "sidebar-backdrop sidebar-backdrop--ghost" },
                 onclick: move |_| {
                     *state.filters_open.write() = false;
                     *state.settings_open.write() = false;
@@ -55,8 +56,6 @@ pub fn Sidebar() -> Element {
             div { class: "sidebar__body",
                 FilterPanel {}
                 LemmaFilterPanel {}
-                PresetList {}
-                StudyModeLinks {}
             }
         }
         aside {
@@ -94,8 +93,6 @@ fn FilterPanel() -> Element {
     let selected_pos = filter_snapshot.pos.clone();
     let show_verbal = selected_pos.iter().any(|p| p == "verb");
     let show_nominal = selected_pos.iter().any(|p| matches!(p.as_str(), "noun" | "adj" | "pronoun" | "article"));
-    let only_due = filter_snapshot.only_due;
-    let exclude_learned = filter_snapshot.exclude_learned;
 
     rsx! {
         section { class: "sidebar__section",
@@ -168,29 +165,6 @@ fn FilterPanel() -> Element {
                 }
             }
 
-            // Due/learned toggles
-            div { class: "filter-toggles",
-                label { class: "toggle-row",
-                    input {
-                        r#type: "checkbox",
-                        checked: only_due,
-                        onchange: move |e| {
-                            state.filter.write().only_due = e.checked();
-                        },
-                    }
-                    span { "Только к повторению" }
-                }
-                label { class: "toggle-row",
-                    input {
-                        r#type: "checkbox",
-                        checked: exclude_learned,
-                        onchange: move |e| {
-                            state.filter.write().exclude_learned = e.checked();
-                        },
-                    }
-                    span { "Скрыть выученные" }
-                }
-            }
             button {
                 class: "btn btn--ghost btn--sm",
                 onclick: move |_| *state.filter.write() = FilterParams::default(),
@@ -284,7 +258,7 @@ fn LemmaFilterPanel() -> Element {
 
     let lemmas = state.lemmas.read().clone();
     let query = lemma_search.read().trim().to_string();
-    let query_norm = normalize(&query, true);
+    let query_norm = normalize(&query, true).to_lowercase();
     let query_lower = query.to_lowercase();
     let visible_lemmas: Vec<_> = lemmas.iter()
         .filter(|lemma| {
@@ -294,7 +268,7 @@ fn LemmaFilterPanel() -> Element {
             if query.is_empty() {
                 true
             } else {
-                normalize(&lemma.greek, true).contains(&query_norm)
+                normalize(&lemma.greek, true).to_lowercase().contains(&query_norm)
                     || lemma.russian
                         .as_deref()
                         .map(|russian| russian.to_lowercase().contains(&query_lower))
@@ -391,107 +365,6 @@ fn LemmaFilterPanel() -> Element {
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-// ── Study presets ────────────────────────────────────────────────────────────
-
-#[component]
-fn PresetList() -> Element {
-    let state = use_context::<AppState>();
-
-    rsx! {
-        section { class: "sidebar__section",
-            h3 { class: "sidebar__section-title",
-                    svg { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "2", stroke_linecap: "round", stroke_linejoin: "round",
-                        path { d: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20" }
-                        path { d: "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" }
-                    }
-                    " Пресеты"
-                }
-            div { class: "preset-list",
-                for (id, label_ru, _label_en) in FilterParams::presets()
-                {
-                    button {
-                        class: "preset-item",
-                        onclick: {
-                            let id = id.to_string();
-                            let mut state = state.clone();
-                            move |_| {
-                                if let Some(fp) = FilterParams::preset(&id) {
-                                    *state.filter.write() = fp;
-                                }
-                            }
-                        },
-                        "{label_ru}"
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ── Quick study-mode links ────────────────────────────────────────────────────
-
-#[component]
-fn StudyModeLinks() -> Element {
-    let mut state = use_context::<AppState>();
-    let overlay_layout = is_overlay_layout();
-
-    rsx! {
-        section { class: "sidebar__section",
-            h3 { class: "sidebar__section-title", "Режим обучения" }
-            nav { class: "study-mode-nav",
-                Link {
-                    to: Route::ParadigmView {},
-                    class: "study-mode-link",
-                    onclick: move |_| {
-                        if overlay_layout {
-                            *state.filters_open.write() = false;
-                            *state.settings_open.write() = false;
-                        }
-                    },
-                    svg { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "2", stroke_linecap: "round", stroke_linejoin: "round",
-                        path { d: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" }
-                        polyline { points: "14 2 14 8 20 8" }
-                        line { x1: "16", y1: "13", x2: "8", y2: "13" }
-                        line { x1: "16", y1: "17", x2: "8", y2: "17" }
-                        polyline { points: "10 9 9 9 8 9" }
-                    }
-                    " Просмотр"
-                }
-                Link {
-                    to: Route::Flashcard {},
-                    class: "study-mode-link",
-                    onclick: move |_| {
-                        if overlay_layout {
-                            *state.filters_open.write() = false;
-                            *state.settings_open.write() = false;
-                        }
-                    },
-                    svg { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "2", stroke_linecap: "round", stroke_linejoin: "round",
-                        rect { x: "2", y: "5", width: "20", height: "14", rx: "2" }
-                        line { x1: "2", y1: "10", x2: "22", y2: "10" }
-                    }
-                    " Карточки"
-                }
-                Link {
-                    to: Route::FillIn {},
-                    class: "study-mode-link",
-                    onclick: move |_| {
-                        if overlay_layout {
-                            *state.filters_open.write() = false;
-                            *state.settings_open.write() = false;
-                        }
-                    },
-                    svg { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "2", stroke_linecap: "round", stroke_linejoin: "round",
-                        path { d: "M12 20h9" }
-                        path { d: "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" }
-                    }
-                    " Вписать"
                 }
             }
         }

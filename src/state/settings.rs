@@ -95,6 +95,9 @@ pub enum GreekFont {
     NotoSerifGreek,
     Cardo,
     GentiumPlus,
+    SourceSerif4,
+    Palatino,
+    PtSerif,
 }
 
 impl GreekFont {
@@ -105,6 +108,9 @@ impl GreekFont {
             GreekFont::NotoSerifGreek => "'Literata', serif",
             GreekFont::Cardo => "'Lora', serif",
             GreekFont::GentiumPlus => "'Crimson Pro', serif",
+            GreekFont::SourceSerif4 => "'Source Serif 4', 'Noto Serif', serif",
+            GreekFont::Palatino => "Palatino Linotype, Palatino, 'Book Antiqua', Georgia, serif",
+            GreekFont::PtSerif => "'PT Serif', Georgia, serif",
         }
     }
 
@@ -115,6 +121,9 @@ impl GreekFont {
             GreekFont::NotoSerifGreek => "Literata",
             GreekFont::Cardo => "Lora",
             GreekFont::GentiumPlus => "Crimson Pro",
+            GreekFont::SourceSerif4 => "Source Serif 4",
+            GreekFont::Palatino => "Palatino",
+            GreekFont::PtSerif => "PT Serif",
         }
     }
 
@@ -125,6 +134,9 @@ impl GreekFont {
             GreekFont::NotoSerifGreek,
             GreekFont::Cardo,
             GreekFont::GentiumPlus,
+            GreekFont::SourceSerif4,
+            GreekFont::Palatino,
+            GreekFont::PtSerif,
         ]
     }
 }
@@ -134,6 +146,27 @@ pub enum UiLanguage {
     #[default]
     Ru,
     En,
+}
+
+/// Detect the preferred UI language from the browser (wasm32) or default to Russian.
+pub fn detect_language() -> UiLanguage {
+    #[cfg(target_arch = "wasm32")]
+    {
+        web_sys::window()
+            .and_then(|w| w.navigator().language())
+            .map(|lang| {
+                if lang.to_lowercase().starts_with("en") {
+                    UiLanguage::En
+                } else {
+                    UiLanguage::Ru
+                }
+            })
+            .unwrap_or(UiLanguage::Ru)
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        UiLanguage::Ru
+    }
 }
 
 /// Persistent user settings, saved to localStorage.
@@ -157,7 +190,7 @@ impl Default for Settings {
         Self {
             theme: Theme::GruvboxLight,
             greek_font: GreekFont::GfsDidot,
-            language: UiLanguage::Ru,
+            language: detect_language(),
             ignore_diacritics: false,
             has_diacritic_keyboard: false,
             show_transliteration: false,

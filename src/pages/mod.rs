@@ -1,4 +1,5 @@
 pub mod home;
+pub mod paradigm_builder;
 pub mod progress;
 pub mod settings;
 pub mod study_fillin;

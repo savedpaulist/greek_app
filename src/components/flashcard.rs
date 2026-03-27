@@ -6,6 +6,22 @@ use crate::logic::sm2::quality_from_answer;
 use crate::models::Form;
 use crate::state::AppState;
 
+const SESSION_SIZE: usize = 10;
+
+const PEPE_IMGS: [Asset; 11] = [
+    asset!("/assets/pepe/pepe_0.png"),
+    asset!("/assets/pepe/pepe_1.png"),
+    asset!("/assets/pepe/pepe_2.png"),
+    asset!("/assets/pepe/pepe_3.png"),
+    asset!("/assets/pepe/pepe_4.png"),
+    asset!("/assets/pepe/pepe_5.png"),
+    asset!("/assets/pepe/pepe_6.png"),
+    asset!("/assets/pepe/pepe_7.png"),
+    asset!("/assets/pepe/pepe_8.png"),
+    asset!("/assets/pepe/pepe_9.png"),
+    asset!("/assets/pepe/pepe_10.png"),
+];
+
 // ── WASM async sleep helper ───────────────────────────────────────────────
 
 #[cfg(target_arch = "wasm32")]
@@ -48,12 +64,44 @@ pub fn FlashcardView(reverse: bool) -> Element {
     }
 
     let total = forms.len();
+    let session_count = total.min(SESSION_SIZE);
     let mut index = use_signal(|| 0usize);
     let mut revealed = use_signal(|| false);
     let mut feedback: Signal<Option<Feedback>> = use_signal(|| None);
-    let shuffle_seed = use_signal(fresh_shuffle_seed);
+    let mut session_correct: Signal<u32> = use_signal(|| 0);
+    let mut shuffle_seed = use_signal(fresh_shuffle_seed);
 
     let order = build_shuffled_order(&forms, *shuffle_seed.read());
+
+    // ── Session results screen ──────────────────────────────────────────────
+    if *index.read() >= session_count {
+        let correct = (*session_correct.read() as usize).min(10);
+        let pepe_src = PEPE_IMGS[correct];
+        return rsx! {
+            div { class: "session-results",
+                h2 { class: "session-results__score",
+                    "{*session_correct.read()}/{session_count}"
+                }
+                img {
+                    class: "session-results__pepe",
+                    src: pepe_src,
+                    alt: "результат",
+                }
+                button {
+                    class: "btn btn--primary",
+                    onclick: move |_| {
+                        *index.write() = 0;
+                        *session_correct.write() = 0;
+                        *revealed.write() = false;
+                        *feedback.write() = None;
+                        *shuffle_seed.write() = fresh_shuffle_seed();
+                    },
+                    "Ещё раз"
+                }
+            }
+        };
+    }
+
     let real_idx = order[*index.read() % total];
     let current_form = forms[real_idx].clone();
     let current_lemma = state.lemma_by_id(current_form.lemma_id);
@@ -74,10 +122,10 @@ pub fn FlashcardView(reverse: bool) -> Element {
             div { class: "session-progress",
                 div {
                     class: "session-progress__bar",
-                    style: "width: {(*index.read() * 100 / total)}%;",
+                    style: "width: {(*index.read() * 100 / session_count)}%;",
                 }
                 span { class: "session-progress__label",
-                    "{*index.read() + 1}/{total}"
+                    "{*index.read() + 1}/{session_count}"
                 }
             }
 
@@ -113,7 +161,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                     class: "btn btn--danger",
                                     onclick: move |_| {
                                         state.record_answer(current_form.id, 1);
-                                        let next = (*index.read() + 1) % total;
+                                        let next = *index.read() + 1;
                                         *index.write() = next;
                                         *revealed.write() = false;
                                         *feedback.write() = None;
@@ -124,7 +172,8 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                     class: "btn btn--warning",
                                     onclick: move |_| {
                                         state.record_answer(current_form.id, 3);
-                                        let next = (*index.read() + 1) % total;
+                                        *session_correct.write() += 1;
+                                        let next = *index.read() + 1;
                                         *index.write() = next;
                                         *revealed.write() = false;
                                         *feedback.write() = None;
@@ -135,7 +184,8 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                     class: "btn btn--success",
                                     onclick: move |_| {
                                         state.record_answer(current_form.id, 5);
-                                        let next = (*index.read() + 1) % total;
+                                        *session_correct.write() += 1;
+                                        let next = *index.read() + 1;
                                         *index.write() = next;
                                         *revealed.write() = false;
                                         *feedback.write() = None;
@@ -170,14 +220,13 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                                 let q = quality_from_answer(is_correct_choice, false);
                                                 state.record_answer(current_form.id, q);
                                                 if is_correct_choice {
+                                                    *session_correct.write() += 1;
                                                     *feedback.write() = Some(Feedback::Correct);
                                                     let mut fb = feedback;
                                                     let mut idx = index;
-                                                    let t = total;
                                                     spawn(async move {
-                                                        sleep_ms(1000).await;
-                                                        let next = (*idx.read() + 1) % t;
-                                                        *idx.write() = next;
+                                                        sleep_ms(800).await;
+                                                        *idx.write() += 1;
                                                         *fb.write() = None;
                                                     });
                                                 } else {
@@ -185,11 +234,9 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                                     let mut fb = feedback;
                                                     let mut idx = index;
                                                     let mut rev = revealed;
-                                                    let t = total;
                                                     spawn(async move {
-                                                        sleep_ms(2000).await;
-                                                        let next = (*idx.read() + 1) % t;
-                                                        *idx.write() = next;
+                                                        sleep_ms(1500).await;
+                                                        *idx.write() += 1;
                                                         *fb.write() = None;
                                                         *rev.write() = false;
                                                     });

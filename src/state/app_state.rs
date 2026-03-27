@@ -49,6 +49,23 @@ pub struct CustomNominalParadigmDraft {
 }
 
 #[derive(Debug, Clone)]
+pub struct CustomParticipleFormEntry {
+    pub tense_tag: String,
+    pub voice_tag: String,
+    pub case_tag: String,
+    pub number_tag: String,
+    pub gender_tag: String,
+    pub greek_form: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct CustomParticipleDraft {
+    pub lemma_greek: String,
+    pub translation: Option<String>,
+    pub entries: Vec<CustomParticipleFormEntry>,
+}
+
+#[derive(Debug, Clone)]
 pub struct CustomVerbParadigmDraft {
     pub lemma_greek: String,
     pub translation: Option<String>,
@@ -453,6 +470,84 @@ impl AppState {
                 conj_type: Some("custom".into()),
                 adj_class: None,
                 part_type: None,
+                num_type: None,
+                pron_type: None,
+                lesson_kozar: None,
+                lesson_mast: None,
+                paradigm_row: Some(index as i32),
+                sort_order: index as i32,
+                notes: Some("custom".into()),
+            })
+            .collect();
+
+        self.custom_lemmas.write().push(custom_lemma.clone());
+        self.custom_forms.write().extend(custom_forms.clone());
+        self.lemmas.write().push(custom_lemma);
+        self.forms.write().extend(custom_forms);
+        self.save_custom_data();
+        Ok(())
+    }
+
+    pub fn add_custom_participle_paradigm(
+        &mut self,
+        draft: CustomParticipleDraft,
+    ) -> Result<(), String> {
+        let lemma_greek = draft.lemma_greek.trim().to_string();
+        if lemma_greek.is_empty() {
+            return Err("Укажите заголовочную форму леммы.".into());
+        }
+        let entries: Vec<CustomParticipleFormEntry> = draft
+            .entries
+            .into_iter()
+            .filter(|e| !e.greek_form.trim().is_empty())
+            .collect();
+        if entries.is_empty() {
+            return Err("Заполните хотя бы одну форму причастия.".into());
+        }
+
+        let next_lemma_id =
+            self.lemmas.read().iter().map(|l| l.id).max().unwrap_or(0) + 1;
+        let next_form_id =
+            self.forms.read().iter().map(|f| f.id).max().unwrap_or(0) + 1;
+
+        let custom_lemma = Lemma {
+            id: next_lemma_id,
+            greek: lemma_greek,
+            latin: None,
+            english: None,
+            russian: draft.translation.and_then(|v| {
+                let t = v.trim().to_string();
+                if t.is_empty() { None } else { Some(t) }
+            }),
+            part_of_speech: Some("participle".into()),
+            category_id: None,
+            lesson_kozar: None,
+            lesson_mast: None,
+            sort_order: 10_000 + next_lemma_id as i32,
+        };
+
+        let custom_forms: Vec<Form> = entries
+            .into_iter()
+            .enumerate()
+            .map(|(index, entry)| Form {
+                id: next_form_id + index as i64,
+                lemma_id: next_lemma_id,
+                greek_form: entry.greek_form.trim().to_string(),
+                transliteration: None,
+                category_id: None,
+                pos: Some("participle".into()),
+                case_tag: Some(entry.case_tag),
+                number_tag: Some(entry.number_tag),
+                gender_tag: Some(entry.gender_tag),
+                tense_tag: Some(entry.tense_tag.clone()),
+                voice_tag: Some(entry.voice_tag.clone()),
+                mood_tag: None,
+                person_tag: None,
+                degree_tag: None,
+                decl_type: Some("custom".into()),
+                conj_type: None,
+                adj_class: None,
+                part_type: Some(format!("{}_{}", entry.tense_tag, entry.voice_tag)),
                 num_type: None,
                 pron_type: None,
                 lesson_kozar: None,

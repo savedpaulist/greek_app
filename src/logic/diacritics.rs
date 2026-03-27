@@ -3,21 +3,21 @@ use unicode_normalization::UnicodeNormalization;
 /// All forms of the Greek definite article, used for optional-article comparison.
 const GREEK_ARTICLES: &[&str] = &[
     // singular nominative
-    "ὁ", "ἡ", "τό",
+    "ὁ", "ἡ", "τό", "τὸ",
     // singular genitive
     "τοῦ", "τῆς",
     // singular dative
     "τῷ", "τῇ",
     // singular accusative
-    "τόν", "τήν",
+    "τόν", "τήν", "τὸν", "τὴν",
     // plural nominative
-    "οἱ", "αἱ", "τά",
+    "οἱ", "αἱ", "τά", "τὰ",
     // plural genitive
     "τῶν",
     // plural dative
     "τοῖς", "ταῖς",
     // plural accusative
-    "τούς", "τάς",
+    "τούς", "τάς", "τοὺς", "τὰς",
     // dual
     "τώ", "τοῖν",
 ];

@@ -81,11 +81,19 @@ impl Form {
     /// Human-readable grammatical description.
     pub fn grammar_label_ru(&self) -> String {
         let mut parts = vec![];
-        if let Some(t) = &self.tense_tag {
-            parts.push(tense_ru(t));
-        }
-        if let Some(v) = &self.voice_tag {
-            parts.push(voice_ru(v));
+        // For participles from the main DB: tense+voice are encoded in part_type
+        // (tense_tag and voice_tag are NULL); for custom participles both are set.
+        let is_ptcp = self.mood_tag.as_deref() == Some("part")
+            || self.pos.as_deref() == Some("participle");
+        if is_ptcp && self.tense_tag.is_none() && self.voice_tag.is_none() {
+            if let Some(pt) = &self.part_type {
+                let (tl, vl) = part_type_label_ru(pt);
+                parts.push(tl);
+                if !vl.is_empty() { parts.push(vl); }
+            }
+        } else {
+            if let Some(t) = &self.tense_tag { parts.push(tense_ru(t)); }
+            if let Some(v) = &self.voice_tag { parts.push(voice_ru(v)); }
         }
         if let Some(m) = &self.mood_tag {
             parts.push(mood_ru(m));
@@ -135,6 +143,30 @@ impl Form {
             parts.push(degree_en(d));
         }
         parts.join(" · ")
+    }
+}
+
+/// Decode DB `part_type` values like "pres_act", "aor1_pass" into (tense_label, voice_label).
+fn part_type_label_ru(pt: &str) -> (&'static str, &'static str) {
+    match pt {
+        "pres_act"      => ("Наст.",   "акт."),
+        "pres_mid"      => ("Наст.",   "мед."),
+        "pres_pass"     => ("Наст.",   "пас."),
+        "pres_mid_pass" => ("Наст.",   "мед./пас."),
+        "imperf_act"    => ("Импф.",   "акт."),
+        "aor1_act"      => ("Аор. I",  "акт."),
+        "aor1_mid"      => ("Аор. I",  "мед."),
+        "aor1_pass"     => ("Аор. I",  "пас."),
+        "aor2_act"      => ("Аор. II", "акт."),
+        "aor2_mid"      => ("Аор. II", "мед."),
+        "aor2_pass"     => ("Аор. II", "пас."),
+        "aor_pass"      => ("Аор.",    "пас."),
+        "perf_act"      => ("Перф.",   "акт."),
+        "perf_mid_pass" => ("Перф.",   "мед./пас."),
+        "fut_act"       => ("Буд.",    "акт."),
+        "fut_mid"       => ("Буд.",    "мед."),
+        "fut_pass"      => ("Буд.",    "пас."),
+        _               => ("причастие", ""),
     }
 }
 
@@ -299,20 +331,10 @@ fn degree_en(s: &str) -> &str {
     }
 }
 
-fn strip_leading_article(text: &str, pos: Option<&str>) -> String {
-    if pos != Some("noun") {
-        return text.to_string();
-    }
-
-    let mut words = text.split_whitespace();
-    let _article = words.next();
-    let remainder = words.collect::<Vec<_>>().join(" ");
-
-    if remainder.is_empty() {
-        text.to_string()
-    } else {
-        remainder
-    }
+fn strip_leading_article(text: &str, _pos: Option<&str>) -> String {
+    // Strip for all parts of speech — uses the known-articles list in diacritics
+    // so only genuine article prefixes (ὁ, ἡ, τό, τοῦ, …) are removed.
+    crate::logic::diacritics::strip_leading_article(text).to_string()
 }
 
 // ── Category ───────────────────────────────────────────────────────────────

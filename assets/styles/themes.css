@@ -18,6 +18,8 @@
   --shadow:      rgba(0,0,0,0.12);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #527a20;
+  --wrong:       #a82825;
 }
 
 /* ── GruvBox Dark ───────────────────────────────────────────────────────── */
@@ -38,6 +40,8 @@
   --shadow:      rgba(0,0,0,0.4);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #76946a;
+  --wrong:       #ab4f51;
 }
 
 /* ── Dracula Light ──────────────────────────────────────────────────────── */
@@ -58,6 +62,8 @@
   --shadow:      rgba(0,0,0,0.10);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #278040;
+  --wrong:       #c83030;
 }
 
 /* ── Dracula Dark ───────────────────────────────────────────────────────── */
@@ -78,6 +84,8 @@
   --shadow:      rgba(0,0,0,0.4);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #6a8e5a;
+  --wrong:       #a55260;
 }
 
 /* ── Nord Light ─────────────────────────────────────────────────────────── */
@@ -98,6 +106,8 @@
   --shadow:      rgba(46,52,64,0.12);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #4a7840;
+  --wrong:       #b33030;
 }
 
 /* ── Nord Dark ───────────────────────────────────────────────────────────── */
@@ -118,6 +128,8 @@
   --shadow:      rgba(0,0,0,0.4);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #6a8c5e;
+  --wrong:       #9e5060;
 }
 
 /* ── Catppuccin Latte ───────────────────────────────────────────────────── */
@@ -138,6 +150,8 @@
   --shadow:      rgba(76,79,105,0.12);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #27832b;
+  --wrong:       #c03030;
 }
 
 /* ── Catppuccin Mocha ───────────────────────────────────────────────────── */
@@ -158,6 +172,8 @@
   --shadow:      rgba(0,0,0,0.4);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #6a8c6a;
+  --wrong:       #a05270;
 }
 
 /* ── Solarized Light ───────────────────────────────────────────────────── */
@@ -178,6 +194,8 @@
   --shadow:      rgba(0,0,0,0.10);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #527a10;
+  --wrong:       #b02825;
 }
 
 /* ── Solarized Dark ─────────────────────────────────────────────────────── */
@@ -198,6 +216,8 @@
   --shadow:      rgba(0,0,0,0.5);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #507a5e;
+  --wrong:       #9e4040;
 }
 
 /* ── Base16 Darkmoss ─────────────────────────────────────────────────────── */
@@ -207,7 +227,7 @@
   --bg3:         #373c3d;
   --fg:          #c7c7a5;
   --fg2:         #818f80;
-  --accent:      #498091;
+  --accent:      #91494d;
   --accent2:     #66d9ef;
   --red:         #ff4658;
   --green:       #499180;
@@ -218,6 +238,8 @@
   --shadow:      rgba(0,0,0,0.5);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #507060;
+  --wrong:       #9e4a4a;
 }
 
 /* ── Base16 Everforest Dark ──────────────────────────────────────────────── */
@@ -238,6 +260,8 @@
   --shadow:      rgba(0,0,0,0.45);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #76916a;
+  --wrong:       #a06060;
 }
 
 /* ── Base16 Rosé Pine ────────────────────────────────────────────────────── */
@@ -247,7 +271,7 @@
   --bg3:         #26233a;
   --fg:          #e0def4;
   --fg2:         #908caa;
-  --accent:      #c4a7e7;
+  --accent:      #e7a7b0;
   --accent2:     #9ccfd8;
   --red:         #eb6f92;
   --green:       #31748f;
@@ -258,6 +282,8 @@
   --shadow:      rgba(0,0,0,0.5);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #5e7f65;
+  --wrong:       #9e4f65;
 }
 
 /* ── Base16 Tokyo Night ──────────────────────────────────────────────────── */
@@ -265,9 +291,9 @@
   --bg:          #1a1b26;
   --bg2:         #16161e;
   --bg3:         #2f3549;
-  --fg:          #a9b1d6;
+  --fg:          #d4bfbf;
   --fg2:         #787c99;
-  --accent:      #7aa2f7;
+  --accent:      #9aace1;
   --accent2:     #73daca;
   --red:         #f7768e;
   --green:       #9ece6a;
@@ -278,6 +304,8 @@
   --shadow:      rgba(0,0,0,0.5);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #5a7a50;
+  --wrong:       #a05060;
 }
 
 /* ── Base16 Kanagawa ─────────────────────────────────────────────────────── */
@@ -289,7 +317,7 @@
   --fg2:         #727169;
   --accent:      #7e9cd8;
   --accent2:     #6a9589;
-  --red:         #c34043;
+  --red:         #ab4f51;
   --green:       #76946a;
   --blue:        #7e9cd8;
   --orange:      #ffa066;
@@ -298,4 +326,6 @@
   --shadow:      rgba(0,0,0,0.5);
   --radius:      12px;
   --radius-sm:   8px;
+  --correct:     #76946a;
+  --wrong:       #ab4f51;
 }

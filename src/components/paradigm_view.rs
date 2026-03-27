@@ -3,14 +3,16 @@ use dioxus::prelude::*;
 use crate::logic::diacritics::normalize;
 use crate::logic::paradigm::{build_nominal_paradigm, build_verb_paradigm};
 use crate::models::form::Lemma;
+use crate::router::Route;
 use crate::state::AppState;
 
-const PARADIGM_POS_FILTERS: [(&str, &str); 5] = [
+const PARADIGM_POS_FILTERS: [(&str, &str); 6] = [
     ("all", "Все"),
     ("noun", "Сущ."),
     ("verb", "Глаг."),
     ("adj", "Прил."),
     ("pronoun", "Мест."),
+    ("participle", "Прич."),
 ];
 
 /// Paradigm view: display full declension/conjugation table for a lemma.
@@ -260,12 +262,31 @@ pub fn LemmaPicker() -> Element {
             } else {
                 div { class: "lemma-list-container",
                     ul { class: "lemma-list",
-                        for lemma in filtered_lemmas {
-                            LemmaRow { lemma: lemma.clone(), on_select: {
-                                let mut selected_lemma = selected_lemma.clone();
-                                let lid = lemma.id;
-                                move |_| *selected_lemma.write() = Some(lid)
-                            }}
+                        {
+                            let custom_ids: std::collections::HashSet<i64> = state
+                                .custom_lemmas
+                                .read()
+                                .iter()
+                                .map(|l| l.id)
+                                .collect();
+                            rsx! {
+                                for lemma in filtered_lemmas {
+                                    {
+                                        let lid = lemma.id;
+                                        let is_custom = custom_ids.contains(&lid);
+                                        rsx! {
+                                            LemmaRow {
+                                                lemma: lemma.clone(),
+                                                is_custom,
+                                                on_select: {
+                                                    let mut selected_lemma = selected_lemma.clone();
+                                                    move |_| *selected_lemma.write() = Some(lid)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -275,15 +296,27 @@ pub fn LemmaPicker() -> Element {
 }
 
 #[component]
-fn LemmaRow(lemma: Lemma, on_select: EventHandler<MouseEvent>) -> Element {
+fn LemmaRow(
+    lemma: Lemma,
+    is_custom: bool,
+    on_select: EventHandler<MouseEvent>,
+) -> Element {
     let translation = lemma.russian.as_deref().or(lemma.english.as_deref()).unwrap_or("");
     let pos = lemma.part_of_speech.as_deref().unwrap_or("?");
+    let lemma_id = lemma.id;
     rsx! {
         li { class: "lemma-item",
             button { class: "lemma-item__btn", onclick: move |e| on_select.call(e),
                 span { class: "lemma-item__greek greek-text", "{lemma.greek}" }
                 span { class: "lemma-item__translation", "{translation}" }
                 span { class: "lemma-item__pos", "[{pos}]" }
+            }
+            if is_custom {
+                Link {
+                    to: Route::ParadigmBuilderEdit { lemma_id },
+                    class: "btn btn--ghost btn--sm lemma-item__edit-btn",
+                    "Изменить"
+                }
             }
         }
     }

@@ -6,7 +6,7 @@ use crate::components::paradigm_view::LemmaPicker;
 pub fn ParadigmViewPage() -> Element {
     rsx! {
         div { class: "study-page study-page--paradigm",
-            h2 { class: "study-page__title", "📖 Просмотр парадигм" }
+            h2 { class: "study-page__title", "Просмотр парадигм" }
             LemmaPicker {}
         }
     }
