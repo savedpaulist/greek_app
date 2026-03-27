@@ -1,5 +1,39 @@
 use serde::{Deserialize, Serialize};
 
+/// Colors for a fully user-editable custom theme.
+/// Each field is a CSS hex colour string (e.g. `"#fbf1c7"`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CustomThemeColors {
+    pub bg: String,
+    pub bg2: String,
+    pub bg3: String,
+    pub fg: String,
+    pub fg2: String,
+    pub accent: String,
+    pub accent2: String,
+    pub red: String,
+    pub green: String,
+    pub border: String,
+}
+
+impl Default for CustomThemeColors {
+    fn default() -> Self {
+        // Seeded from GruvboxLight so new users see a reasonable palette.
+        Self {
+            bg:      "#fbf1c7".into(),
+            bg2:     "#ebdbb2".into(),
+            bg3:     "#d5c4a1".into(),
+            fg:      "#3c3836".into(),
+            fg2:     "#504945".into(),
+            accent:  "#d79921".into(),
+            accent2: "#b57614".into(),
+            red:     "#cc241d".into(),
+            green:   "#98971a".into(),
+            border:  "#bdae93".into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Theme {
     GruvboxLight,
@@ -17,6 +51,7 @@ pub enum Theme {
     PinkPastelDark,
     SeriousBlueLight,
     SeriousBlueDark,
+    Custom,
 }
 
 impl Theme {
@@ -37,6 +72,7 @@ impl Theme {
             Theme::PinkPastelDark => "catppuccin-mocha",
             Theme::SeriousBlueLight => "solarized-light",
             Theme::SeriousBlueDark => "solarized-dark",
+            Theme::Custom => "custom",
         }
     }
 
@@ -57,6 +93,7 @@ impl Theme {
             Theme::PinkPastelDark => "Catppuccin Mocha",
             Theme::SeriousBlueLight => "Solarized Light",
             Theme::SeriousBlueDark => "Solarized Dark",
+            Theme::Custom => "Custom ✎",
         }
     }
 
@@ -77,6 +114,7 @@ impl Theme {
             Theme::PinkPastelDark,
             Theme::SeriousBlueLight,
             Theme::SeriousBlueDark,
+            Theme::Custom,
         ]
     }
 }
@@ -174,8 +212,15 @@ pub fn detect_language() -> UiLanguage {
 #[serde(default)]
 pub struct Settings {
     pub theme: Theme,
+    /// Colors for the user-editable custom theme.
+    #[serde(default)]
+    pub custom_theme: CustomThemeColors,
     pub greek_font: GreekFont,
+    /// Language for all UI chrome (buttons, menus, titles).
     pub language: UiLanguage,
+    /// Language for grammatical terminology (case/tense/mood labels).
+    #[serde(default = "detect_language")]
+    pub morph_language: UiLanguage,
     pub ignore_diacritics: bool,
     pub has_diacritic_keyboard: bool,
     pub show_transliteration: bool,
@@ -189,8 +234,10 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             theme: Theme::GruvboxLight,
+            custom_theme: CustomThemeColors::default(),
             greek_font: GreekFont::GfsDidot,
             language: detect_language(),
+            morph_language: detect_language(),
             ignore_diacritics: false,
             has_diacritic_keyboard: false,
             show_transliteration: false,

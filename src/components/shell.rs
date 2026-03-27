@@ -1,5 +1,4 @@
-use crate::router::Route;
-use crate::state::AppState;
+use crate::{i18n::{t, UiKey}, router::Route, state::{AppState, settings::Theme}};
 use dioxus::prelude::*;
 
 fn is_overlay_layout() -> bool {
@@ -24,12 +23,41 @@ pub fn Shell() -> Element {
     let settings = state.settings.read();
     let theme = settings.theme.data_attr();
     let greek_font = settings.greek_font.css_family();
+    // Build a <style> block containing the custom palette when Custom is active.
+    // Using a child <style> element (instead of inline vars on the root div) ensures
+    // that Dioxus removes it from the DOM cleanly when switching to a preset theme,
+    // so no stale CSS variables linger.
+    let custom_css = if settings.theme == Theme::Custom {
+        let c = &settings.custom_theme;
+        format!(
+            "[data-theme='custom']{{--bg:{bg};--bg2:{bg2};--bg3:{bg3};\
+             --fg:{fg};--fg2:{fg2};\
+             --accent:{ac};--accent2:{ac2};\
+             --red:{red};--green:{green};--border:{border};\
+             --blue:#458588;--orange:{ac};--purple:{ac2};\
+             --shadow:rgba(0,0,0,0.15);\
+             --correct:{green};--wrong:{red};\
+             --radius:12px;--radius-sm:8px;}}",
+            bg = c.bg, bg2 = c.bg2, bg3 = c.bg3,
+            fg = c.fg, fg2 = c.fg2,
+            ac = c.accent, ac2 = c.accent2,
+            red = c.red, green = c.green, border = c.border,
+        )
+    } else {
+        String::new()
+    };
     drop(settings);
 
     let filters_open = *state.filters_open.read();
     let settings_open = *state.settings_open.read();
 
     rsx! {
+        // Inject custom theme CSS into the document via a <style> element.
+        // When the user switches back to a preset theme, Dioxus removes this
+        // element and the [data-theme="custom"] rules vanish immediately.
+        if !custom_css.is_empty() {
+            style { "{custom_css}" }
+        }
         div {
             "data-theme": theme,
             "data-filters-open": "{filters_open}",
@@ -51,6 +79,7 @@ pub fn Shell() -> Element {
 #[component]
 pub fn TopBar() -> Element {
     let mut state = use_context::<AppState>();
+    let lang = state.settings.read().language.clone();
 
     rsx! {
         header { class: "topbar",
@@ -73,10 +102,10 @@ pub fn TopBar() -> Element {
                     }
                 }
                 // App name
-                Link { to: Route::Home {}, class: "topbar__title", "Главная" }
+                Link { to: Route::Home {}, class: "topbar__title", "{t(UiKey::TopbarHome, lang.clone())}" }
                 // Right actions
                 nav { class: "topbar__actions",
-                    Link { to: Route::Progress {}, class: "topbar__icon-btn", title: "Прогресс",
+                    Link { to: Route::Progress {}, class: "topbar__icon-btn", title: t(UiKey::TopbarProgress, lang.clone()),
                         svg { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "2", stroke_linecap: "round", stroke_linejoin: "round",
                             line { x1: "18", y1: "20", x2: "18", y2: "10" }
                             line { x1: "12", y1: "20", x2: "12", y2: "4" }
@@ -85,7 +114,7 @@ pub fn TopBar() -> Element {
                     }
                     button {
                         class: "topbar__icon-btn",
-                        title: "Настройки",
+                        title: t(UiKey::TopbarSettings, lang.clone()),
                         onclick: move |_| {
                             let mut settings_open = state.settings_open.write();
                             *settings_open = !*settings_open;

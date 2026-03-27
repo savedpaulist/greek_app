@@ -28,9 +28,13 @@ pub fn strip_leading_article(s: &str) -> &str {
     let s = s.trim();
     for art in GREEK_ARTICLES {
         if let Some(rest) = s.strip_prefix(art) {
-            let rest = rest.trim_start();
-            if !rest.is_empty() {
-                return rest;
+            // Require whitespace after the article so that a word like "τῆσδε"
+            // is not mistaken for article "τῆς" + remainder "δε".
+            if rest.starts_with(char::is_whitespace) {
+                let rest = rest.trim_start();
+                if !rest.is_empty() {
+                    return rest;
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::i18n::{t, UiKey};
 use crate::logic::diacritics::{compare_greek, diff_chars, strip_leading_article};
 use crate::logic::sm2::quality_from_answer;
 use crate::state::AppState;
@@ -8,12 +9,15 @@ use crate::state::AppState;
 #[component]
 pub fn FillInView() -> Element {
     let mut state = use_context::<AppState>();
+    let settings_snap = state.settings.read().clone();
+    let lang = settings_snap.language.clone();
+    let morph_lang = settings_snap.morph_language.clone();
     let forms = state.filtered_forms();
 
     if forms.is_empty() {
         return rsx! {
             div { class: "empty-state",
-                p { "Нет форм по текущему фильтру." }
+                p { "{t(UiKey::EmptyNoForms, lang.clone())}" }
             }
         };
     }
@@ -30,8 +34,6 @@ pub fn FillInView() -> Element {
     let expected = current_form.greek_form.clone();
     let expected2 = expected.clone();
     let diff = if *submitted.read() {
-        // If the user answered without an article but expected has one,
-        // diff against the stripped form so char highlighting is meaningful.
         let answer = input_value.read();
         let answer_str: &str = &*answer;
         let user_has_article = strip_leading_article(answer_str.trim()) != answer_str.trim();
@@ -72,7 +74,7 @@ pub fn FillInView() -> Element {
                             p { class: "fillin-card__translation", "«{ru}»" }
                         }
                     }
-                    p { class: "fillin-card__grammar", "{current_form.grammar_label_ru()}" }
+                    p { class: "fillin-card__grammar", "{current_form.grammar_label(&morph_lang)}" }
                 }
 
                 // Input area
@@ -87,7 +89,7 @@ pub fn FillInView() -> Element {
                             }
                         }
                         p { class: "fillin-answer greek-text",
-                            "Правильно: {current_form.greek_form}"
+                            "{t(UiKey::FillInAnswer, lang.clone())}: {current_form.greek_form}"
                         }
                         button {
                             class: "btn btn--primary",
@@ -99,14 +101,14 @@ pub fn FillInView() -> Element {
                                     *submitted.write() = false;
                                     *input_value.write() = String::new();
                             },
-                            "Далее →"
+                            "{t(UiKey::FillInNext, lang.clone())}"
                         }
                     } else {
                         input {
                             class: "fillin-input greek-text",
                             r#type: "text",
                             value: "{input_value.read()}",
-                            placeholder: "Введите форму…",
+                            placeholder: t(UiKey::FillInPlaceholder, lang.clone()),
                             oninput: move |e| *input_value.write() = e.value(),
                             onkeydown: move |e: KeyboardEvent| {
                                     if e.key() == Key::Enter && !input_value.read().is_empty() {
@@ -133,15 +135,14 @@ pub fn FillInView() -> Element {
                                         *is_correct.write() = ok;
                                         *submitted.write() = true;
                                     },
-                                "Проверить →"
+                                "{t(UiKey::FillInSubmit, lang.clone())}"
                             }
                         }
-                        // Diacritics toggle note
                         p { class: "fillin-hint",
                             if ignore_diacritics {
-                                "⌨️ Диакритика игнорируется"
+                                "{t(UiKey::FillInHintDiacriticsOff, lang.clone())}"
                             } else {
-                                "⌨️ Диакритика учитывается"
+                                "{t(UiKey::FillInHintDiacriticsOn, lang.clone())}"
                             }
                         }
                     }

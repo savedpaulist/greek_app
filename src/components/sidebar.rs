@@ -1,7 +1,11 @@
 use dioxus::prelude::*;
 
+use crate::i18n::{t, UiKey};
 use crate::logic::diacritics::normalize;
-use crate::models::FilterParams;
+use crate::models::{
+    tags::{Case, GNumber, Mood, Person, Tense, Voice},
+    FilterParams,
+};
 use crate::pages::settings::SettingsPanel;
 use crate::state::AppState;
 
@@ -24,6 +28,7 @@ fn is_overlay_layout() -> bool {
 #[component]
 pub fn Sidebar() -> Element {
     let mut state = use_context::<AppState>();
+    let lang = state.settings.read().language.clone();
     let filters_open = *state.filters_open.read();
     let settings_open = *state.settings_open.read();
     let filters_class = if filters_open { "sidebar sidebar--filters sidebar--open" } else { "sidebar sidebar--filters" };
@@ -31,8 +36,6 @@ pub fn Sidebar() -> Element {
     let overlay_layout = is_overlay_layout();
 
     rsx! {
-        // Transparent shield on desktop, dark backdrop on mobile — both intercept clicks
-        // so tapping outside the sidebar closes it without triggering page content.
         if filters_open || settings_open {
             div {
                 class: if overlay_layout { "sidebar-backdrop" } else { "sidebar-backdrop sidebar-backdrop--ghost" },
@@ -50,7 +53,7 @@ pub fn Sidebar() -> Element {
                         circle { cx: "11", cy: "11", r: "8" }
                         line { x1: "21", y1: "21", x2: "16.65", y2: "16.65" }
                     }
-                    " Фильтры"
+                    " {t(UiKey::FiltersTitle, lang.clone())}"
                 }
             }
             div { class: "sidebar__body",
@@ -66,7 +69,7 @@ pub fn Sidebar() -> Element {
                         circle { cx: "12", cy: "12", r: "3" }
                         path { d: "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" }
                     }
-                    " Настройки"
+                    " {t(UiKey::SettingsTitle, lang.clone())}"
                 }
                 button {
                     class: "sidebar__close",
@@ -89,6 +92,9 @@ pub fn Sidebar() -> Element {
 #[component]
 fn FilterPanel() -> Element {
     let mut state = use_context::<AppState>();
+    let settings_snap = state.settings.read().clone();
+    let morph_lang = &settings_snap.morph_language;
+    let lang = settings_snap.language.clone();
     let filter_snapshot = state.filter.read().clone();
     let selected_pos = filter_snapshot.pos.clone();
     let show_verbal = selected_pos.iter().any(|p| p == "verb");
@@ -96,16 +102,16 @@ fn FilterPanel() -> Element {
 
     rsx! {
         section { class: "sidebar__section",
-            h3 { class: "sidebar__section-title", "Часть речи" }
+            h3 { class: "sidebar__section-title", "{t(UiKey::FiltersPos, lang.clone())}" }
             div { class: "filter-chips",
-                for (value , label) in [
-                    ("noun", "Сущ."),
-                    ("verb", "Глагол"),
-                    ("participle", "Прич."),
-                    ("adj", "Прил."),
-                    ("pronoun", "Мест."),
-                    ("article", "Артикль"),
-                    ("num", "Числ."),
+                for (value, label) in [
+                    ("noun",       t(UiKey::FilterPosNoun,    morph_lang.clone())),
+                    ("verb",       t(UiKey::FilterPosVerb,    morph_lang.clone())),
+                    ("participle", t(UiKey::FilterPosPart,    morph_lang.clone())),
+                    ("adj",        t(UiKey::FilterPosAdj,     morph_lang.clone())),
+                    ("pronoun",    t(UiKey::FilterPosPronoun, morph_lang.clone())),
+                    ("article",    t(UiKey::FilterPosArticle, morph_lang.clone())),
+                    ("num",        t(UiKey::FilterPosNum,     morph_lang.clone())),
                 ]
                 {
                     PosChip { value: value.to_string(), label: label.to_string() }
@@ -114,53 +120,68 @@ fn FilterPanel() -> Element {
 
             // Tense chips (shown when verb is selected)
             if show_verbal {
-                h4 { class: "sidebar__section-subtitle", "Время" }
+                h4 { class: "sidebar__section-subtitle", "{t(UiKey::FiltersTense, lang.clone())}" }
                 div { class: "filter-chips filter-chips--sm",
-                    for (value, label) in [
-                        ("pres", "Наст."), ("imperf", "Импф."), ("fut", "Буд."),
-                        ("aor1", "Аор. I"), ("aor2", "Аор. II"), ("perf", "Перф."),
-                    ] {
-                        TagChip { field: "tense".to_string(), value: value.to_string(), label: label.to_string() }
+                    for tense in [Tense::Pres, Tense::Imperf, Tense::Fut, Tense::Aor1, Tense::Aor2, Tense::Perf] {
+                        TagChip {
+                            field: "tense".to_string(),
+                            value: tense.to_db().to_string(),
+                            label: tense.label(morph_lang).to_string(),
+                        }
                     }
                 }
-                h4 { class: "sidebar__section-subtitle", "Лицо" }
+                h4 { class: "sidebar__section-subtitle", "{t(UiKey::FiltersPerson, lang.clone())}" }
                 div { class: "filter-chips filter-chips--sm",
-                    for (value, label) in [("1", "1л."), ("2", "2л."), ("3", "3л.")] {
-                        TagChip { field: "person".to_string(), value: value.to_string(), label: label.to_string() }
+                    for person in [Person::P1, Person::P2, Person::P3] {
+                        TagChip {
+                            field: "person".to_string(),
+                            value: person.to_db().to_string(),
+                            label: person.label(morph_lang).to_string(),
+                        }
                     }
                 }
-                h4 { class: "sidebar__section-subtitle", "Залог" }
+                h4 { class: "sidebar__section-subtitle", "{t(UiKey::FiltersVoice, lang.clone())}" }
                 div { class: "filter-chips filter-chips--sm",
-                    for (value, label) in [("act", "Акт."), ("mid", "Мед."), ("pass", "Пас."), ("mid_pass", "Мед./Пас.")] {
-                        TagChip { field: "voice".to_string(), value: value.to_string(), label: label.to_string() }
+                    for voice in [Voice::Act, Voice::Mid, Voice::Pass, Voice::MidPass] {
+                        TagChip {
+                            field: "voice".to_string(),
+                            value: voice.to_db().to_string(),
+                            label: voice.label(morph_lang).to_string(),
+                        }
                     }
                 }
-                h4 { class: "sidebar__section-subtitle", "Наклонение" }
+                h4 { class: "sidebar__section-subtitle", "{t(UiKey::FiltersMood, lang.clone())}" }
                 div { class: "filter-chips filter-chips--sm",
-                    for (value, label) in [
-                        ("ind", "Изъяв."), ("subj", "Сослаг."), ("opt", "Жел."),
-                        ("imp", "Повел."), ("inf", "Инфин."), ("part", "Прич."),
-                    ] {
-                        TagChip { field: "mood".to_string(), value: value.to_string(), label: label.to_string() }
+                    for mood in [Mood::Ind, Mood::Subj, Mood::Opt, Mood::Imp, Mood::Inf, Mood::Part] {
+                        TagChip {
+                            field: "mood".to_string(),
+                            value: mood.to_db().to_string(),
+                            label: mood.label(morph_lang).to_string(),
+                        }
                     }
                 }
             }
 
             // Case chips (shown when nominal POS selected)
             if show_nominal {
-                h4 { class: "sidebar__section-subtitle", "Падеж" }
+                h4 { class: "sidebar__section-subtitle", "{t(UiKey::FiltersCase, lang.clone())}" }
                 div { class: "filter-chips filter-chips--sm",
-                    for (value, label) in [
-                        ("nom", "Им."), ("gen", "Род."), ("dat", "Дат."),
-                        ("acc", "Вин."), ("voc", "Зват."),
-                    ] {
-                        TagChip { field: "case".to_string(), value: value.to_string(), label: label.to_string() }
+                    for case in [Case::Nom, Case::Gen, Case::Dat, Case::Acc, Case::Voc] {
+                        TagChip {
+                            field: "case".to_string(),
+                            value: case.to_db().to_string(),
+                            label: case.label(morph_lang).to_string(),
+                        }
                     }
                 }
-                h4 { class: "sidebar__section-subtitle", "Число" }
+                h4 { class: "sidebar__section-subtitle", "{t(UiKey::FiltersNumber, lang.clone())}" }
                 div { class: "filter-chips filter-chips--sm",
-                    for (value, label) in [("sg", "Ед."), ("pl", "Мн."), ("du", "Дв.")] {
-                        TagChip { field: "number".to_string(), value: value.to_string(), label: label.to_string() }
+                    for num in [GNumber::Sg, GNumber::Pl, GNumber::Du] {
+                        TagChip {
+                            field: "number".to_string(),
+                            value: num.to_db().to_string(),
+                            label: num.label(morph_lang).to_string(),
+                        }
                     }
                 }
             }
@@ -168,7 +189,7 @@ fn FilterPanel() -> Element {
             button {
                 class: "btn btn--ghost btn--sm",
                 onclick: move |_| *state.filter.write() = FilterParams::default(),
-                "Сбросить фильтры"
+                "{t(UiKey::FiltersReset, lang.clone())}"
             }
         }
     }
@@ -254,6 +275,7 @@ fn tag_field_mut<'a>(f: &'a mut FilterParams, field: &str) -> &'a mut Vec<String
 #[component]
 fn LemmaFilterPanel() -> Element {
     let mut state = use_context::<AppState>();
+    let lang = state.settings.read().language.clone();
     let mut lemma_search = use_signal(|| String::new());
 
     let lemmas = state.lemmas.read().clone();
@@ -294,24 +316,24 @@ fn LemmaFilterPanel() -> Element {
 
     rsx! {
         section { class: "sidebar__section",
-            h3 { class: "sidebar__section-title", "Конкретные слова" }
+            h3 { class: "sidebar__section-title", "{t(UiKey::FilterLemmaTitle, lang.clone())}" }
             input {
                 class: "lemma-search-input",
                 r#type: "search",
-                placeholder: "Поиск по слову или переводу…",
+                placeholder: t(UiKey::FilterLemmaSearch, lang.clone()),
                 value: "{lemma_search.read()}",
                 oninput: move |e| *lemma_search.write() = e.value(),
             }
             p { class: "lemma-filter-status",
                 if query.is_empty() {
-                    "Список слов"
+                    "{t(UiKey::FilterLemmaList, lang.clone())}"
                 } else {
-                    "Найдено: {total_matches}"
+                    "{t(UiKey::FilterLemmaFound, lang.clone())} {total_matches}"
                 }
             }
             div { class: "lemma-filter-list",
                 if visible_lemmas.is_empty() {
-                    p { class: "lemma-filter-empty", "Ничего не найдено" }
+                    p { class: "lemma-filter-empty", "{t(UiKey::FilterLemmaEmpty, lang.clone())}" }
                 } else {
                     for lemma in visible_lemmas {
                         {
@@ -346,7 +368,6 @@ fn LemmaFilterPanel() -> Element {
                     }
                 }
             }
-            // Show selected lemmas as removable chips
             if !selected_ids.is_empty() {
                 div { class: "filter-chips filter-chips--tags",
                     for (lid, lname) in selected_lemmas {

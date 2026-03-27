@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::state::settings::UiLanguage;
+
 // ── Part of Speech ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
@@ -52,6 +54,12 @@ impl Pos {
             Pos::Letter => "Letter",
             Pos::Term => "Term",
             Pos::Other => "Other",
+        }
+    }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
         }
     }
     pub fn from_str(s: &str) -> Self {
@@ -118,6 +126,12 @@ impl Case {
             Case::Voc => "Voc",
         }
     }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
+        }
+    }
     pub fn to_db(&self) -> &'static str {
         match self {
             Case::Nom => "nom",
@@ -167,6 +181,12 @@ impl GNumber {
             GNumber::Pl => "Pl",
         }
     }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
+        }
+    }
     pub fn to_db(&self) -> &'static str {
         match self {
             GNumber::Sg => "sg",
@@ -210,6 +230,12 @@ impl Gender {
             Gender::M => "M",
             Gender::F => "F",
             Gender::N => "N",
+        }
+    }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
         }
     }
     pub fn to_db(&self) -> &'static str {
@@ -285,6 +311,12 @@ impl Tense {
             Tense::Futperf => "Fut Pf",
         }
     }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
+        }
+    }
     pub fn to_db(&self) -> &'static str {
         match self {
             Tense::Pres => "pres",
@@ -345,6 +377,12 @@ impl Voice {
             Voice::MidPass => "Mid/Pass",
         }
     }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
+        }
+    }
     pub fn to_db(&self) -> &'static str {
         match self {
             Voice::Act => "act",
@@ -401,6 +439,12 @@ impl Mood {
             Mood::Part => "Part",
         }
     }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
+        }
+    }
     pub fn to_db(&self) -> &'static str {
         match self {
             Mood::Ind => "ind",
@@ -451,6 +495,12 @@ impl Person {
             Person::P3 => "3rd",
         }
     }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
+        }
+    }
     pub fn to_db(&self) -> &'static str {
         match self {
             Person::P1 => "1",
@@ -494,6 +544,12 @@ impl Degree {
             Degree::Pos => "Pos",
             Degree::Comp => "Comp",
             Degree::Superl => "Superl",
+        }
+    }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
         }
     }
     pub fn from_str(s: &str) -> Option<Self> {
@@ -583,6 +639,31 @@ impl DeclType {
             DeclType::Other => "Другое",
         }
     }
+    pub fn label_en(&self) -> &'static str {
+        match self {
+            DeclType::Os => "2nd decl. (-ος)",
+            DeclType::On => "2nd decl. (-ον)",
+            DeclType::Attic => "2nd decl. Attic",
+            DeclType::Contract => "2nd decl. contract",
+            DeclType::Sonant => "3rd decl. sonant",
+            DeclType::Labial => "3rd decl. labial",
+            DeclType::Velar => "3rd decl. velar",
+            DeclType::Dental => "3rd decl. dental",
+            DeclType::Nt => "3rd decl. (-ντ)",
+            DeclType::Sigma => "3rd decl. (-σ)",
+            DeclType::VowelIU => "3rd decl. (-ι/-υ)",
+            DeclType::Diphth => "3rd decl. diphthong",
+            DeclType::IrregR => "3rd decl. irreg. (-ρ)",
+            DeclType::Unknown3 => "3rd decl. (unknown)",
+            DeclType::Other => "Other",
+        }
+    }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
+        }
+    }
 }
 
 // ── ConjType ───────────────────────────────────────────────────────────────
@@ -617,6 +698,22 @@ impl ConjType {
             ConjType::ContractEo => "Контракт. (-έω)",
             ConjType::ContractOo => "Контракт. (-όω)",
             ConjType::MiVerb => "Атематич. (-μι)",
+        }
+    }
+    pub fn label_en(&self) -> &'static str {
+        match self {
+            ConjType::Thematic => "Thematic (-ω)",
+            ConjType::ThematicCons => "Thematic cons.",
+            ConjType::ContractAo => "Contract (-άω)",
+            ConjType::ContractEo => "Contract (-έω)",
+            ConjType::ContractOo => "Contract (-όω)",
+            ConjType::MiVerb => "Athematic (-μι)",
+        }
+    }
+    pub fn label(&self, lang: &UiLanguage) -> &'static str {
+        match lang {
+            UiLanguage::Ru => self.label_ru(),
+            UiLanguage::En => self.label_en(),
         }
     }
     pub fn from_str(s: &str) -> Option<Self> {

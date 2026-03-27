@@ -1,15 +1,21 @@
 use dioxus::prelude::*;
 
-use crate::state::{
-    settings::{GreekFont, Theme},
-    AppState,
+use crate::{
+    i18n::{t, UiKey},
+    state::{
+        settings::{GreekFont, Theme, UiLanguage},
+        AppState,
+    },
 };
 
 #[component]
 pub fn SettingsPage() -> Element {
+    let state = use_context::<AppState>();
+    let lang = state.settings.read().language.clone();
+    let page_title = t(UiKey::SettingsTitle, lang);
     rsx! {
         div { class: "settings-page",
-            h2 { class: "settings-page__title", "Настройки" }
+            h2 { class: "settings-page__title", "{page_title}" }
             SettingsPanel {}
         }
     }
@@ -20,11 +26,63 @@ pub fn SettingsPanel() -> Element {
     let mut state = use_context::<AppState>();
 
     let settings_snapshot = state.settings.read().clone();
+    let lang = settings_snapshot.language.clone();
 
     rsx! {
         div { class: "settings-panel",
+
+            // ── Language ──────────────────────────────────────────────────
             section { class: "settings-section",
-                h3 { class: "settings-section__title", "Тема" }
+                h3 { class: "settings-section__title", "{t(UiKey::SettingsLang, lang.clone())}" }
+                div { class: "lang-row",
+                    span { class: "lang-row__label", "{t(UiKey::SettingsLangUi, lang.clone())}" }
+                    div { class: "lang-chips",
+                        for variant in [UiLanguage::Ru, UiLanguage::En] {
+                            button {
+                                class: if settings_snapshot.language == variant {
+                                    "lang-chip lang-chip--active"
+                                } else {
+                                    "lang-chip"
+                                },
+                                onclick: {
+                                    let variant = variant.clone();
+                                    move |_| {
+                                        state.settings.write().language = variant.clone();
+                                        state.save_settings();
+                                    }
+                                },
+                                { match variant { UiLanguage::Ru => "RU", UiLanguage::En => "EN" } }
+                            }
+                        }
+                    }
+                }
+                div { class: "lang-row",
+                    span { class: "lang-row__label", "{t(UiKey::SettingsLangMorph, lang.clone())}" }
+                    div { class: "lang-chips",
+                        for variant in [UiLanguage::Ru, UiLanguage::En] {
+                            button {
+                                class: if settings_snapshot.morph_language == variant {
+                                    "lang-chip lang-chip--active"
+                                } else {
+                                    "lang-chip"
+                                },
+                                onclick: {
+                                    let variant = variant.clone();
+                                    move |_| {
+                                        state.settings.write().morph_language = variant.clone();
+                                        state.save_settings();
+                                    }
+                                },
+                                { match variant { UiLanguage::Ru => "RU", UiLanguage::En => "EN" } }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Theme ─────────────────────────────────────────────────────
+            section { class: "settings-section",
+                h3 { class: "settings-section__title", "{t(UiKey::SettingsTheme, lang.clone())}" }
                 div { class: "theme-nav-row",
                     button {
                         class: "btn btn--ghost btn--sm",
@@ -61,7 +119,8 @@ pub fn SettingsPanel() -> Element {
                     }
                 }
                 div { class: "theme-grid",
-                    for theme in Theme::all() {
+                    // Render all preset themes (everything except Custom).
+                    for theme in Theme::all().iter().filter(|t| !matches!(t, Theme::Custom)) {
                         button {
                             class: if settings_snapshot.theme == *theme {
                                 "theme-chip theme-chip--active"
@@ -80,10 +139,30 @@ pub fn SettingsPanel() -> Element {
                         }
                     }
                 }
+
+                // Custom theme button — always visible below the preset grid.
+                button {
+                    class: if settings_snapshot.theme == Theme::Custom {
+                        "theme-chip-custom theme-chip-custom--active"
+                    } else {
+                        "theme-chip-custom"
+                    },
+                    onclick: move |_| {
+                        state.settings.write().theme = Theme::Custom;
+                        state.save_settings();
+                    },
+                    "✎ Custom"
+                }
+
+                // Colour editor — only visible when Custom is active.
+                if settings_snapshot.theme == Theme::Custom {
+                    CustomThemeEditor {}
+                }
             }
 
+            // ── Font ──────────────────────────────────────────────────────
             section { class: "settings-section",
-                h3 { class: "settings-section__title", "Шрифт для греческого" }
+                h3 { class: "settings-section__title", "{t(UiKey::SettingsFont, lang.clone())}" }
                 div { class: "font-list",
                     for font in GreekFont::all() {
                         button {
@@ -106,8 +185,9 @@ pub fn SettingsPanel() -> Element {
                 }
             }
 
+            // ── Options ───────────────────────────────────────────────────
             section { class: "settings-section",
-                h3 { class: "settings-section__title", "Опции" }
+                h3 { class: "settings-section__title", "{t(UiKey::SettingsOptions, lang.clone())}" }
                 label { class: "toggle-row",
                     input {
                         r#type: "checkbox",
@@ -117,7 +197,7 @@ pub fn SettingsPanel() -> Element {
                             state.save_settings();
                         },
                     }
-                    span { "Игнорировать диакритику при проверке" }
+                    span { "{t(UiKey::SettingsIgnoreDiacritics, lang.clone())}" }
                 }
                 label { class: "toggle-row",
                     input {
@@ -128,7 +208,7 @@ pub fn SettingsPanel() -> Element {
                             state.save_settings();
                         },
                     }
-                    span { "Показывать транслитерацию" }
+                    span { "{t(UiKey::SettingsShowTransliteration, lang.clone())}" }
                 }
                 label { class: "toggle-row",
                     input {
@@ -139,10 +219,92 @@ pub fn SettingsPanel() -> Element {
                             state.save_settings();
                         },
                     }
-                    span { "Показывать двойственное число в таблицах" }
+                    span { "{t(UiKey::SettingsIncludeDual, lang.clone())}" }
                 }
             }
         }
     }
 }
 
+// ── Custom theme colour editor ───────────────────────────────────────────────
+
+#[component]
+fn CustomThemeEditor() -> Element {
+    let mut state = use_context::<AppState>();
+    let snap = state.settings.read().clone();
+    let lang = snap.language.clone();
+    let c = snap.custom_theme.clone();
+
+    rsx! {
+        div { class: "custom-theme-editor",
+            p { class: "custom-theme-editor__title", "{t(UiKey::ThemeCustomEdit, lang.clone())}" }
+
+            ColorRow {
+                label: t(UiKey::ThemeColorBg, lang.clone()).to_string(),
+                value: c.bg.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.bg = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorBg2, lang.clone()).to_string(),
+                value: c.bg2.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.bg2 = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorBg3, lang.clone()).to_string(),
+                value: c.bg3.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.bg3 = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorFg, lang.clone()).to_string(),
+                value: c.fg.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.fg = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorFg2, lang.clone()).to_string(),
+                value: c.fg2.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.fg2 = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorAccent, lang.clone()).to_string(),
+                value: c.accent.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.accent = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorAccent2, lang.clone()).to_string(),
+                value: c.accent2.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.accent2 = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorRed, lang.clone()).to_string(),
+                value: c.red.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.red = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorGreen, lang.clone()).to_string(),
+                value: c.green.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.green = v; state.save_settings(); },
+            }
+            ColorRow {
+                label: t(UiKey::ThemeColorBorder, lang.clone()).to_string(),
+                value: c.border.clone(),
+                onchange: move |v| { state.settings.write().custom_theme.border = v; state.save_settings(); },
+            }
+        }
+    }
+}
+
+#[component]
+fn ColorRow(label: String, value: String, onchange: EventHandler<String>) -> Element {
+    rsx! {
+        div { class: "color-row",
+            label { class: "color-row__label", "{label}" }
+            input {
+                class: "color-row__swatch",
+                r#type: "color",
+                value: "{value}",
+                oninput: move |e| onchange.call(e.value()),
+            }
+            span { class: "color-row__hex", "{value}" }
+        }
+    }
+}

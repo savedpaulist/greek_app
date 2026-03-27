@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::i18n::{t, UiKey};
 use crate::models::FilterParams;
 use crate::router::Route;
 use crate::state::AppState;
@@ -8,6 +9,7 @@ use crate::state::AppState;
 pub fn HomePage() -> Element {
     let mut state = use_context::<AppState>();
     let stats = state.stats();
+    let lang = state.settings.read().language.clone();
 
     let filter = state.filter.read();
     let has_filter = !filter.pos.is_empty()
@@ -26,22 +28,22 @@ pub fn HomePage() -> Element {
             // Hero header
             div { class: "home-hero",
                 h1 { class: "home-hero__title greek-text", "σφόδρα" }
-                p { class: "home-hero__subtitle", "Тренажёр древнегреческих парадигм" }
+                p { class: "home-hero__subtitle", "{t(UiKey::HomeSubtitle, lang.clone())}" }
             }
 
             // Quick stats
             div { class: "home-stats",
-                StatBadge { label: "Форм в базе", value: stats.total.to_string() }
-                StatBadge { label: "Встречено", value: stats.seen.to_string() }
-                StatBadge { label: "Выучено", value: stats.learned.to_string() }
+                StatBadge { label: t(UiKey::HomeStatForms, lang.clone()).to_string(), value: stats.total.to_string() }
+                StatBadge { label: t(UiKey::HomeStatSeen, lang.clone()).to_string(), value: stats.seen.to_string() }
+                StatBadge { label: t(UiKey::HomeStatLearned, lang.clone()).to_string(), value: stats.learned.to_string() }
                 StatBadge {
-                    label: "Точность",
+                    label: t(UiKey::HomeStatAccuracy, lang.clone()).to_string(),
                     value: format!("{:.0}%", stats.accuracy * 100.0),
                 }
             }
 
             // Study mode cards
-            h2 { class: "home-section-title", "Выберите режим" }
+            h2 { class: "home-section-title", "{t(UiKey::HomeModeSelect, lang.clone())}" }
             div { class: "mode-grid",
                 Link { to: Route::Flashcard {}, class: "mode-card",
                     span { class: "mode-card__icon",
@@ -52,10 +54,10 @@ pub fn HomePage() -> Element {
                     }
                     div { class: "mode-card__text",
                         strong { class: "mode-card__title",
-                            "Карточки"
-                            if has_filter { span { class: "mode-card__filter-badge", " (фильтр)" } }
+                            "{t(UiKey::ModeFlashcard, lang.clone())}"
+                            if has_filter { span { class: "mode-card__filter-badge", " ({t(UiKey::HomeFilterBadge, lang.clone())})" } }
                         }
-                        p { class: "mode-card__desc", "Слово → форма" }
+                        p { class: "mode-card__desc", "{t(UiKey::ModeFlashcardDesc, lang.clone())}" }
                     }
                 }
                 Link { to: Route::FlashcardReverse {}, class: "mode-card",
@@ -67,10 +69,10 @@ pub fn HomePage() -> Element {
                     }
                     div { class: "mode-card__text",
                         strong { class: "mode-card__title",
-                            "Обратные карточки"
-                            if has_filter { span { class: "mode-card__filter-badge", " (фильтр)" } }
+                            "{t(UiKey::ModeFlashcardRev, lang.clone())}"
+                            if has_filter { span { class: "mode-card__filter-badge", " ({t(UiKey::HomeFilterBadge, lang.clone())})" } }
                         }
-                        p { class: "mode-card__desc", "Форма → словарное слово" }
+                        p { class: "mode-card__desc", "{t(UiKey::ModeFlashcardRevDesc, lang.clone())}" }
                     }
                 }
                 Link { to: Route::FillIn {}, class: "mode-card",
@@ -82,10 +84,10 @@ pub fn HomePage() -> Element {
                     }
                     div { class: "mode-card__text",
                         strong { class: "mode-card__title",
-                            "Вписать форму"
-                            if has_filter { span { class: "mode-card__filter-badge", " (фильтр)" } }
+                            "{t(UiKey::ModeFillIn, lang.clone())}"
+                            if has_filter { span { class: "mode-card__filter-badge", " ({t(UiKey::HomeFilterBadge, lang.clone())})" } }
                         }
-                        p { class: "mode-card__desc", "Введите форму по грамматическому описанию" }
+                        p { class: "mode-card__desc", "{t(UiKey::ModeFillInDesc, lang.clone())}" }
                     }
                 }
                 Link { to: Route::ParadigmView {}, class: "mode-card",
@@ -99,8 +101,8 @@ pub fn HomePage() -> Element {
                         }
                     }
                     div { class: "mode-card__text",
-                        strong { class: "mode-card__title", "Просмотр парадигм" }
-                        p { class: "mode-card__desc", "Изучайте таблицы склонений и спряжений" }
+                        strong { class: "mode-card__title", "{t(UiKey::ModeParadigm, lang.clone())}" }
+                        p { class: "mode-card__desc", "{t(UiKey::ModeParadigmDesc, lang.clone())}" }
                     }
                 }
                 Link { to: Route::ParadigmBuilder {}, class: "mode-card",
@@ -111,24 +113,24 @@ pub fn HomePage() -> Element {
                         }
                     }
                     div { class: "mode-card__text",
-                        strong { class: "mode-card__title", "Своя парадигма" }
-                        p { class: "mode-card__desc", "Создайте и изучайте свои таблицы форм" }
+                        strong { class: "mode-card__title", "{t(UiKey::ModeBuilderTitle, lang.clone())}" }
+                        p { class: "mode-card__desc", "{t(UiKey::ModeBuilderDesc, lang.clone())}" }
                     }
                 }
             }
-            // Onboarding hint
+            // Filter hint
             if has_filter {
                 div { class: "home-tip home-tip--filter",
-                    p { "Активен фильтр. Режимы покажут только отфильтрованные формы." }
+                    p { "{t(UiKey::HomeFilterActive, lang.clone())}" }
                     button {
                         class: "btn btn--ghost btn--sm",
                         onclick: move |_| *state.filter.write() = FilterParams::default(),
-                        "Сбросить фильтры"
+                        "{t(UiKey::FiltersReset, lang.clone())}"
                     }
                 }
             }
             div { class: "home-tip",
-                p { "Используйте фильтр (меню) для выбора раздела или урока" }
+                p { "{t(UiKey::HomeTipFilter, lang.clone())}" }
             }
         }
     }

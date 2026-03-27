@@ -329,3 +329,25 @@
   --correct:     #76946a;
   --wrong:       #ab4f51;
 }
+
+/* ── Custom (user-editable, CSS vars injected inline by shell.rs) ─────────── */
+[data-theme="custom"] {
+  --bg:          #fbf1c7;
+  --bg2:         #ebdbb2;
+  --bg3:         #d5c4a1;
+  --fg:          #3c3836;
+  --fg2:         #504945;
+  --accent:      #d79921;
+  --accent2:     #b57614;
+  --red:         #cc241d;
+  --green:       #98971a;
+  --blue:        #458588;
+  --orange:      #d65d0e;
+  --purple:      #b16286;
+  --border:      #bdae93;
+  --shadow:      rgba(0,0,0,0.15);
+  --radius:      12px;
+  --radius-sm:   8px;
+  --correct:     #527a20;
+  --wrong:       #a82825;
+}

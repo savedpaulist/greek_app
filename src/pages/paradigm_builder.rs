@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use dioxus::prelude::*;
 
+use crate::i18n::{t, UiKey};
 use crate::models::{Form, Lemma};
 use crate::router::Route;
 use crate::state::{
@@ -9,6 +10,7 @@ use crate::state::{
         CustomFormEntry, CustomNominalParadigmDraft, CustomParticipleFormEntry,
         CustomParticipleDraft, CustomVerbFormEntry, CustomVerbParadigmDraft,
     },
+    settings::UiLanguage,
     AppState,
 };
 
@@ -141,8 +143,6 @@ fn compute_init_state(
 
 // ── Route wrapper for editing ─────────────────────────────────────────────────
 
-/// Rendered at `/paradigm-builder/:lemma_id` — pre-fills the form from an
-/// existing custom paradigm.
 #[component]
 pub fn ParadigmBuilderEditPage(lemma_id: i64) -> Element {
     rsx! { ParadigmBuilderPage { edit_lemma_id: Some(lemma_id) } }
@@ -153,6 +153,9 @@ pub fn ParadigmBuilderEditPage(lemma_id: i64) -> Element {
 #[component]
 pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
     let mut state = use_context::<AppState>();
+    let settings_snap = state.settings.read().clone();
+    let lang = settings_snap.language.clone();
+    let morph_lang = settings_snap.morph_language.clone();
     let is_edit = edit_lemma_id.is_some();
 
     let init = {
@@ -194,17 +197,21 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
     let is_verb        = paradigm_pos.read().as_str() == "verb";
     let is_participle  = paradigm_pos.read().as_str() == "participle";
 
+    let sg_label = num_label("sg", &morph_lang);
+    let du_label = num_label("du", &morph_lang);
+    let pl_label = num_label("pl", &morph_lang);
     let number_columns: Vec<(&str, &str)> = if *paradigm_dual.read() {
-        vec![("sg", "Ед."), ("du", "Дв."), ("pl", "Мн.")]
+        vec![("sg", sg_label), ("du", du_label), ("pl", pl_label)]
     } else {
-        vec![("sg", "Ед."), ("pl", "Мн.")]
+        vec![("sg", sg_label), ("pl", pl_label)]
     };
+
     let cases = [
-        ("nom", "Им."),
-        ("gen", "Род."),
-        ("dat", "Дат."),
-        ("acc", "Вин."),
-        ("voc", "Зв."),
+        ("nom", case_label("nom", &morph_lang)),
+        ("gen", case_label("gen", &morph_lang)),
+        ("dat", case_label("dat", &morph_lang)),
+        ("acc", case_label("acc", &morph_lang)),
+        ("voc", case_label("voc", &morph_lang)),
     ];
 
     rsx! {
@@ -214,16 +221,14 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                     svg { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "2", stroke_linecap: "round", stroke_linejoin: "round",
                         polyline { points: "15 18 9 12 15 6" }
                     }
-                    " Главная"
+                    " {t(UiKey::TopbarHome, lang.clone())}"
                 }
                 h2 { class: "paradigm-builder-page__title",
-                    { if is_edit { "Редактировать парадигму" } else { "Создать парадигму" } }
+                    { if is_edit { t(UiKey::BuilderEdit, lang.clone()) } else { t(UiKey::BuilderTitle, lang.clone()) } }
                 }
             }
 
-            p { class: "settings-help",
-                "Созданные формы сохраняются в JSON и сразу подмешиваются в общие фильтры и проверки."
-            }
+            p { class: "settings-help", "{t(UiKey::BuilderHint, lang.clone())}" }
 
             // ── Existing custom paradigms list ───────────────────────────────
             if !custom_lemmas.is_empty() {
@@ -245,7 +250,7 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                         strong { class: "greek-text", "{greek}" }
                                         if is_being_edited {
                                             span { class: "custom-paradigm-item__editing-badge",
-                                                " ✏ редактируется"
+                                                "{t(UiKey::BuilderEditingBadge, lang.clone())}"
                                             }
                                         }
                                         if let Some(ru) = russian {
@@ -259,13 +264,13 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                             Link {
                                                 to: Route::ParadigmBuilderEdit { lemma_id: lid },
                                                 class: "btn btn--ghost btn--sm",
-                                                "Изменить"
+                                                "{t(UiKey::BuilderEditBtn, lang.clone())}"
                                             }
                                         }
                                         button {
                                             class: "btn btn--ghost btn--sm",
                                             onclick: move |_| state.remove_custom_paradigm(lid),
-                                            "Удалить"
+                                            "{t(UiKey::Delete, lang.clone())}"
                                         }
                                     }
                                 }
@@ -280,21 +285,21 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                 input {
                     class: "lemma-search-input greek-text",
                     r#type: "text",
-                    placeholder: "Лемма",
+                    placeholder: t(UiKey::BuilderLemmaField, lang.clone()),
                     value: "{lemma_greek.read()}",
                     oninput: move |e| *lemma_greek.write() = e.value(),
                 }
                 input {
                     class: "lemma-search-input",
                     r#type: "text",
-                    placeholder: "Перевод / помета",
+                    placeholder: t(UiKey::BuilderTranslationField, lang.clone()),
                     value: "{translation.read()}",
                     oninput: move |e| *translation.write() = e.value(),
                 }
 
                 div { class: "custom-paradigm-meta",
                     label { class: "custom-field",
-                        span { "Часть речи" }
+                        span { "{t(UiKey::BuilderPosLabel, lang.clone())}" }
                         select {
                             class: "custom-select",
                             value: "{paradigm_pos.read()}",
@@ -305,25 +310,25 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                 cell_values.write().clear();
                                 *save_message.write() = None;
                             },
-                            option { value: "noun", "Существительное" }
-                            option { value: "verb", "Глагол" }
-                            option { value: "adj", "Прилагательное" }
-                            option { value: "pronoun", "Местоимение" }
-                            option { value: "participle", "Причастие" }
-                            option { value: "article", "Артикль" }
+                            option { value: "noun",      "{t(UiKey::FilterPosNoun,    morph_lang.clone())}" }
+                            option { value: "verb",      "{t(UiKey::FilterPosVerb,    morph_lang.clone())}" }
+                            option { value: "adj",       "{t(UiKey::FilterPosAdj,     morph_lang.clone())}" }
+                            option { value: "pronoun",   "{t(UiKey::FilterPosPronoun, morph_lang.clone())}" }
+                            option { value: "participle","{t(UiKey::FilterPosPart,    morph_lang.clone())}" }
+                            option { value: "article",   "{t(UiKey::FilterPosArticle, morph_lang.clone())}" }
                         }
                     }
                     if !is_verb && !is_participle {
                         label { class: "custom-field",
-                            span { "Род" }
+                            span { "{t(UiKey::BuilderGenderLabel, lang.clone())}" }
                             select {
                                 class: "custom-select",
                                 value: "{paradigm_gender.read()}",
                                 onchange: move |e| *paradigm_gender.write() = e.value(),
-                                option { value: "", "Не указывать" }
-                                option { value: "m", "Мужской" }
-                                option { value: "f", "Женский" }
-                                option { value: "n", "Средний" }
+                                option { value: "", "{t(UiKey::BuilderGenderNone, lang.clone())}" }
+                                option { value: "m", "{t(UiKey::BuilderGenderM, morph_lang.clone())}" }
+                                option { value: "f", "{t(UiKey::BuilderGenderF, morph_lang.clone())}" }
+                                option { value: "n", "{t(UiKey::BuilderGenderN, morph_lang.clone())}" }
                             }
                         }
                     }
@@ -335,22 +340,22 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                         checked: *paradigm_dual.read(),
                         onchange: move |e| *paradigm_dual.write() = e.checked(),
                     }
-                    span { "Добавить двойственное число" }
+                    span { "{t(UiKey::BuilderDualLabel, lang.clone())}" }
                 }
 
                 // ── Verb controls ─────────────────────────────────────────────
                 if is_verb {
                     div { class: "custom-verb-controls",
                         div { class: "custom-field",
-                            span { "Времена" }
+                            span { "{t(UiKey::BuilderTensesLabel, lang.clone())}" }
                             div { class: "custom-toggle-group",
                                 for (value, label) in [
-                                    ("pres", "Наст."),
-                                    ("imperf", "Импф."),
-                                    ("fut", "Буд."),
-                                    ("aor1", "Аор. I"),
-                                    ("aor2", "Аор. II"),
-                                    ("perf", "Перф."),
+                                    ("pres",   tense_label("pres",   &morph_lang)),
+                                    ("imperf",  tense_label("imperf", &morph_lang)),
+                                    ("fut",     tense_label("fut",    &morph_lang)),
+                                    ("aor1",    tense_label("aor1",   &morph_lang)),
+                                    ("aor2",    tense_label("aor2",   &morph_lang)),
+                                    ("perf",    tense_label("perf",   &morph_lang)),
                                 ] {
                                     {
                                         let active = verb_tenses.read().iter().any(|i| i == value);
@@ -367,13 +372,13 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                             }
                         }
                         div { class: "custom-field",
-                            span { "Наклонения" }
+                            span { "{t(UiKey::BuilderMoodsLabel, lang.clone())}" }
                             div { class: "custom-toggle-group",
                                 for (value, label) in [
-                                    ("ind", "Изъяв."),
-                                    ("subj", "Сослаг."),
-                                    ("opt", "Желат."),
-                                    ("imp", "Повел."),
+                                    ("ind",  mood_label("ind",  &morph_lang)),
+                                    ("subj", mood_label("subj", &morph_lang)),
+                                    ("opt",  mood_label("opt",  &morph_lang)),
+                                    ("imp",  mood_label("imp",  &morph_lang)),
                                 ] {
                                     {
                                         let active = verb_moods.read().iter().any(|i| i == value);
@@ -390,13 +395,13 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                             }
                         }
                         div { class: "custom-field",
-                            span { "Залоги" }
+                            span { "{t(UiKey::BuilderVoicesLabel, lang.clone())}" }
                             div { class: "custom-toggle-group",
                                 for (value, label) in [
-                                    ("act", "Акт."),
-                                    ("mid", "Мед."),
-                                    ("pass", "Пас."),
-                                    ("mid_pass", "Мед./Пас."),
+                                    ("act",      voice_label("act",      &morph_lang)),
+                                    ("mid",      voice_label("mid",      &morph_lang)),
+                                    ("pass",     voice_label("pass",     &morph_lang)),
+                                    ("mid_pass", voice_label("mid_pass", &morph_lang)),
                                 ] {
                                     {
                                         let active = verb_voices.read().iter().any(|i| i == value);
@@ -419,14 +424,14 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                 if is_participle {
                     div { class: "custom-verb-controls",
                         div { class: "custom-field",
-                            span { "Времена" }
+                            span { "{t(UiKey::BuilderTensesLabel, lang.clone())}" }
                             div { class: "custom-toggle-group",
                                 for (value, label) in [
-                                    ("pres", "Наст."),
-                                    ("aor1", "Аор. I"),
-                                    ("aor2", "Аор. II"),
-                                    ("perf", "Перф."),
-                                    ("fut", "Буд."),
+                                    ("pres", tense_label("pres", &morph_lang)),
+                                    ("aor1", tense_label("aor1", &morph_lang)),
+                                    ("aor2", tense_label("aor2", &morph_lang)),
+                                    ("perf", tense_label("perf", &morph_lang)),
+                                    ("fut",  tense_label("fut",  &morph_lang)),
                                 ] {
                                     {
                                         let active = ptcp_tenses.read().iter().any(|i| i == value);
@@ -443,13 +448,13 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                             }
                         }
                         div { class: "custom-field",
-                            span { "Залоги" }
+                            span { "{t(UiKey::BuilderVoicesLabel, lang.clone())}" }
                             div { class: "custom-toggle-group",
                                 for (value, label) in [
-                                    ("act", "Акт."),
-                                    ("mid", "Мед."),
-                                    ("pass", "Пас."),
-                                    ("mid_pass", "Мед./Пас."),
+                                    ("act",      voice_label("act",      &morph_lang)),
+                                    ("mid",      voice_label("mid",      &morph_lang)),
+                                    ("pass",     voice_label("pass",     &morph_lang)),
+                                    ("mid_pass", voice_label("mid_pass", &morph_lang)),
                                 ] {
                                     {
                                         let active = ptcp_voices.read().iter().any(|i| i == value);
@@ -466,9 +471,13 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                             }
                         }
                         div { class: "custom-field",
-                            span { "Роды" }
+                            span { "{t(UiKey::BuilderGendersLabel, lang.clone())}" }
                             div { class: "custom-toggle-group",
-                                for (value, label) in [("m", "М"), ("f", "Ж"), ("n", "С")] {
+                                for (value, label) in [
+                                    ("m", gender_label("m", &morph_lang)),
+                                    ("f", gender_label("f", &morph_lang)),
+                                    ("n", gender_label("n", &morph_lang)),
+                                ] {
                                     {
                                         let active = ptcp_genders.read().iter().any(|i| i == value);
                                         let value = value.to_string();
@@ -493,7 +502,7 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                             for voice in verb_voices.read().clone() {
                                 div { class: "custom-grid-block",
                                     div { class: "custom-grid-block__title",
-                                        "{tense_label_ru(&tense)} · {mood_label_ru(&mood)} · {voice_label_ru(&voice)}"
+                                        "{tense_label(&tense, &morph_lang)} · {mood_label(&mood, &morph_lang)} · {voice_label(&voice, &morph_lang)}"
                                     }
                                     div { class: "custom-grid-wrapper",
                                         table { class: "custom-grid",
@@ -506,9 +515,13 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                                 }
                                             }
                                             tbody {
-                                                for (person_tag, person_label) in [("1", "1-е"), ("2", "2-е"), ("3", "3-е")] {
+                                                for (person_tag, person_lbl) in [
+                                                    ("1", person_label("1", &morph_lang)),
+                                                    ("2", person_label("2", &morph_lang)),
+                                                    ("3", person_label("3", &morph_lang)),
+                                                ] {
                                                     tr {
-                                                        th { "{person_label}" }
+                                                        th { "{person_lbl}" }
                                                         for (number_tag, _label) in &number_columns {
                                                             {
                                                                 let key = verb_cell_key(&tense, &mood, &voice, person_tag, number_tag);
@@ -544,7 +557,7 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                         for voice in ptcp_voices.read().clone() {
                             div { class: "custom-grid-block",
                                 div { class: "custom-grid-block__title",
-                                    "{tense_label_ru(&tense)} · {voice_label_ru(&voice)}"
+                                    "{tense_label(&tense, &morph_lang)} · {voice_label(&voice, &morph_lang)}"
                                 }
                                 div { class: "custom-grid-wrapper",
                                     table { class: "custom-grid",
@@ -553,16 +566,16 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                                 th { "" }
                                                 th { "" }
                                                 for gender_tag in ptcp_genders.read().clone() {
-                                                    th { "{gender_label_ru(&gender_tag)}" }
+                                                    th { "{gender_label(&gender_tag, &morph_lang)}" }
                                                 }
                                             }
                                         }
                                         tbody {
-                                            for (number_tag, number_label) in &number_columns {
-                                                for (case_tag, case_label) in cases {
+                                            for (number_tag, number_lbl) in &number_columns {
+                                                for (case_tag, case_lbl) in cases {
                                                     tr {
-                                                        th { "{case_label}" }
-                                                        th { "{number_label}" }
+                                                        th { "{case_lbl}" }
+                                                        th { "{number_lbl}" }
                                                         for gender_tag in ptcp_genders.read().clone() {
                                                             {
                                                                 let key = format!("ptcp:{tense}:{voice}:{case_tag}:{number_tag}:{gender_tag}");
@@ -605,9 +618,9 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                 }
                             }
                             tbody {
-                                for (case_tag, case_label) in cases {
+                                for (case_tag, case_lbl) in cases {
                                     tr {
-                                        th { "{case_label}" }
+                                        th { "{case_lbl}" }
                                         for (number_tag, _label) in &number_columns {
                                             {
                                                 let key = format!("{case_tag}:{number_tag}");
@@ -644,12 +657,11 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                         let translation_value = translation.read().clone();
                         let pos_value = paradigm_pos.read().clone();
                         let active_numbers: Vec<(&str, &str)> = if *paradigm_dual.read() {
-                            vec![("sg", "Ед."), ("du", "Дв."), ("pl", "Мн.")]
+                            vec![("sg", ""), ("du", ""), ("pl", "")]
                         } else {
-                            vec![("sg", "Ед."), ("pl", "Мн.")]
+                            vec![("sg", ""), ("pl", "")]
                         };
 
-                        // Remove the old version when editing
                         if let Some(lid) = edit_lemma_id {
                             state.remove_custom_paradigm(lid);
                         }
@@ -758,9 +770,9 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                 cell_values.write().clear();
                                 *save_message.write() = Some(
                                     if is_edit {
-                                        "Парадигма обновлена.".into()
+                                        t(UiKey::BuilderUpdated, lang.clone()).to_string()
                                     } else {
-                                        "Парадигма сохранена и уже участвует в фильтрах и тренировках.".into()
+                                        t(UiKey::BuilderSavedNominal, lang.clone()).to_string()
                                     }
                                 );
                             }
@@ -769,7 +781,7 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                             }
                         }
                     },
-                    { if is_edit { "Обновить парадигму" } else { "Сохранить парадигму" } }
+                    { if is_edit { t(UiKey::BuilderUpdateBtn, lang.clone()) } else { t(UiKey::BuilderSaveBtn, lang.clone()) } }
                 }
             }
         }
@@ -793,43 +805,69 @@ fn verb_cell_key(tense: &str, mood: &str, voice: &str, person: &str, number: &st
     format!("verb:{tense}:{mood}:{voice}:{person}:{number}")
 }
 
-fn gender_label_ru(tag: &str) -> &str {
-    match tag {
-        "m" => "М",
-        "f" => "Ж",
-        "n" => "С",
-        _ => tag,
+fn tense_label<'a>(tag: &'a str, lang: &UiLanguage) -> &'static str {
+    match lang {
+        UiLanguage::En => match tag {
+            "pres" => "Pres", "imperf" => "Impf", "fut" => "Fut",
+            "aor1" => "Aor I", "aor2" => "Aor II", "perf" => "Perf", _ => "?",
+        },
+        UiLanguage::Ru => match tag {
+            "pres" => "Наст.", "imperf" => "Импф.", "fut" => "Буд.",
+            "aor1" => "Аор. I", "aor2" => "Аор. II", "perf" => "Перф.", _ => "?",
+        },
     }
 }
 
-fn tense_label_ru(tag: &str) -> &str {
-    match tag {
-        "pres"   => "Наст.",
-        "imperf" => "Импф.",
-        "fut"    => "Буд.",
-        "aor1"   => "Аор. I",
-        "aor2"   => "Аор. II",
-        "perf"   => "Перф.",
-        _        => tag,
+fn mood_label<'a>(tag: &'a str, lang: &UiLanguage) -> &'static str {
+    match lang {
+        UiLanguage::En => match tag {
+            "ind" => "Ind", "subj" => "Subj", "opt" => "Opt", "imp" => "Imp", _ => "?",
+        },
+        UiLanguage::Ru => match tag {
+            "ind" => "Изъяв.", "subj" => "Сослаг.", "opt" => "Желат.", "imp" => "Повел.", _ => "?",
+        },
     }
 }
 
-fn mood_label_ru(tag: &str) -> &str {
-    match tag {
-        "ind"  => "Изъяв.",
-        "subj" => "Сослаг.",
-        "opt"  => "Желат.",
-        "imp"  => "Повел.",
-        _      => tag,
+fn voice_label<'a>(tag: &'a str, lang: &UiLanguage) -> &'static str {
+    match lang {
+        UiLanguage::En => match tag {
+            "act" => "Act", "mid" => "Mid", "pass" => "Pass", "mid_pass" => "Mid/Pass", _ => "?",
+        },
+        UiLanguage::Ru => match tag {
+            "act" => "Акт.", "mid" => "Мед.", "pass" => "Пас.", "mid_pass" => "Мед./Пас.", _ => "?",
+        },
     }
 }
 
-fn voice_label_ru(tag: &str) -> &str {
-    match tag {
-        "act"      => "Акт.",
-        "mid"      => "Мед.",
-        "pass"     => "Пас.",
-        "mid_pass" => "Мед./Пас.",
-        _          => tag,
+fn gender_label<'a>(tag: &'a str, lang: &UiLanguage) -> &'static str {
+    match lang {
+        UiLanguage::En => match tag { "m" => "M", "f" => "F", "n" => "N", _ => "?" },
+        UiLanguage::Ru => match tag { "m" => "М", "f" => "Ж", "n" => "С", _ => "?" },
+    }
+}
+
+fn case_label<'a>(tag: &'a str, lang: &UiLanguage) -> &'static str {
+    match lang {
+        UiLanguage::En => match tag {
+            "nom" => "Nom", "gen" => "Gen", "dat" => "Dat", "acc" => "Acc", "voc" => "Voc", _ => "?",
+        },
+        UiLanguage::Ru => match tag {
+            "nom" => "Им.", "gen" => "Род.", "dat" => "Дат.", "acc" => "Вин.", "voc" => "Зв.", _ => "?",
+        },
+    }
+}
+
+fn num_label<'a>(tag: &'a str, lang: &UiLanguage) -> &'static str {
+    match lang {
+        UiLanguage::En => match tag { "sg" => "Sg", "du" => "Du", "pl" => "Pl", _ => "?" },
+        UiLanguage::Ru => match tag { "sg" => "Ед.", "du" => "Дв.", "pl" => "Мн.", _ => "?" },
+    }
+}
+
+fn person_label<'a>(tag: &'a str, lang: &UiLanguage) -> &'static str {
+    match lang {
+        UiLanguage::En => match tag { "1" => "1st", "2" => "2nd", "3" => "3rd", _ => "?" },
+        UiLanguage::Ru => match tag { "1" => "1-е", "2" => "2-е", "3" => "3-е", _ => "?" },
     }
 }

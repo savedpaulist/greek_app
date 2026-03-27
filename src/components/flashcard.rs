@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use dioxus::prelude::*;
 
+use crate::i18n::{t, UiKey};
 use crate::logic::sm2::quality_from_answer;
 use crate::models::Form;
 use crate::state::AppState;
@@ -53,12 +54,15 @@ enum Feedback {
 #[component]
 pub fn FlashcardView(reverse: bool) -> Element {
     let mut state = use_context::<AppState>();
+    let settings_snap = state.settings.read().clone();
+    let lang = settings_snap.language.clone();
+    let morph_lang = settings_snap.morph_language.clone();
     let forms = state.filtered_forms();
 
     if forms.is_empty() {
         return rsx! {
             div { class: "empty-state",
-                p { "Нет форм по текущему фильтру." }
+                p { "{t(UiKey::EmptyNoForms, lang.clone())}" }
             }
         };
     }
@@ -96,7 +100,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                         *feedback.write() = None;
                         *shuffle_seed.write() = fresh_shuffle_seed();
                     },
-                    "Ещё раз"
+                    "{t(UiKey::FlashcardRetry, lang.clone())}"
                 }
             }
         };
@@ -108,7 +112,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
     let revealed_answer = if reverse {
         current_form.test_prompt_greek()
     } else {
-        current_form.grammar_label_ru()
+        current_form.grammar_label(&morph_lang)
     };
     let form_choices = if reverse {
         build_same_lemma_choices(&forms, &current_form, 6)
@@ -138,7 +142,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                 p { class: "flashcard__translation", "«{ru}»" }
                             }
                         }
-                        p { class: "flashcard__grammar", "{current_form.grammar_label_ru()}" }
+                        p { class: "flashcard__grammar", "{current_form.grammar_label(&morph_lang)}" }
                     } else {
                         p { class: "flashcard__lemma greek-text", "{current_form.test_prompt_greek()}" }
                         if let Some(lemma) = &current_lemma {
@@ -166,7 +170,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                         *revealed.write() = false;
                                         *feedback.write() = None;
                                     },
-                                    "✗ Не знал"
+                                    "{t(UiKey::FlashcardNoKnow, lang.clone())}"
                                 }
                                 button {
                                     class: "btn btn--warning",
@@ -178,7 +182,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                         *revealed.write() = false;
                                         *feedback.write() = None;
                                     },
-                                    "~ С трудом"
+                                    "{t(UiKey::FlashcardHard, lang.clone())}"
                                 }
                                 button {
                                     class: "btn btn--success",
@@ -190,7 +194,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                         *revealed.write() = false;
                                         *feedback.write() = None;
                                     },
-                                    "✓ Знал"
+                                    "{t(UiKey::FlashcardKnow, lang.clone())}"
                                 }
                             }
                         }
@@ -245,7 +249,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                             if reverse {
                                                 span { class: "greek-text", "{choice.test_prompt_greek()}" }
                                             } else {
-                                                span { class: "mc-choice__grammar", "{choice.grammar_label_ru()}" }
+                                                span { class: "mc-choice__grammar", "{choice.grammar_label(&morph_lang)}" }
                                             }
                                         }
                                     }
@@ -256,7 +260,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                             class: "btn btn--ghost btn--sm",
                             disabled: feedback.read().is_some(),
                             onclick: move |_| *revealed.write() = true,
-                            "Показать ответ"
+                            "{t(UiKey::FlashcardShow, lang.clone())}"
                         }
                     }
                 }

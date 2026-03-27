@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::state::settings::UiLanguage;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Lemma {
     pub id: i64,
@@ -118,11 +120,17 @@ impl Form {
 
     pub fn grammar_label_en(&self) -> String {
         let mut parts = vec![];
-        if let Some(t) = &self.tense_tag {
-            parts.push(tense_en(t));
-        }
-        if let Some(v) = &self.voice_tag {
-            parts.push(voice_en(v));
+        let is_ptcp = self.mood_tag.as_deref() == Some("part")
+            || self.pos.as_deref() == Some("participle");
+        if is_ptcp && self.tense_tag.is_none() && self.voice_tag.is_none() {
+            if let Some(pt) = &self.part_type {
+                let (tl, vl) = part_type_label_en(pt);
+                parts.push(tl);
+                if !vl.is_empty() { parts.push(vl); }
+            }
+        } else {
+            if let Some(t) = &self.tense_tag { parts.push(tense_en(t)); }
+            if let Some(v) = &self.voice_tag { parts.push(voice_en(v)); }
         }
         if let Some(m) = &self.mood_tag {
             parts.push(mood_en(m));
@@ -143,6 +151,13 @@ impl Form {
             parts.push(degree_en(d));
         }
         parts.join(" · ")
+    }
+
+    pub fn grammar_label(&self, lang: &UiLanguage) -> String {
+        match lang {
+            UiLanguage::Ru => self.grammar_label_ru(),
+            UiLanguage::En => self.grammar_label_en(),
+        }
     }
 }
 
@@ -167,6 +182,29 @@ fn part_type_label_ru(pt: &str) -> (&'static str, &'static str) {
         "fut_mid"       => ("Буд.",    "мед."),
         "fut_pass"      => ("Буд.",    "пас."),
         _               => ("причастие", ""),
+    }
+}
+
+fn part_type_label_en(pt: &str) -> (&'static str, &'static str) {
+    match pt {
+        "pres_act"      => ("Pres",    "Act"),
+        "pres_mid"      => ("Pres",    "Mid"),
+        "pres_pass"     => ("Pres",    "Pass"),
+        "pres_mid_pass" => ("Pres",    "Mid/Pass"),
+        "imperf_act"    => ("Impf",    "Act"),
+        "aor1_act"      => ("Aor I",   "Act"),
+        "aor1_mid"      => ("Aor I",   "Mid"),
+        "aor1_pass"     => ("Aor I",   "Pass"),
+        "aor2_act"      => ("Aor II",  "Act"),
+        "aor2_mid"      => ("Aor II",  "Mid"),
+        "aor2_pass"     => ("Aor II",  "Pass"),
+        "aor_pass"      => ("Aor",     "Pass"),
+        "perf_act"      => ("Perf",    "Act"),
+        "perf_mid_pass" => ("Perf",    "Mid/Pass"),
+        "fut_act"       => ("Fut",     "Act"),
+        "fut_mid"       => ("Fut",     "Mid"),
+        "fut_pass"      => ("Fut",     "Pass"),
+        _               => ("participle", ""),
     }
 }
 
