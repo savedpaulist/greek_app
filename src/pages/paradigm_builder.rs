@@ -656,42 +656,29 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                         let lemma_value = lemma_greek.read().clone();
                         let translation_value = translation.read().clone();
                         let pos_value = paradigm_pos.read().clone();
-                        let active_numbers: Vec<(&str, &str)> = if *paradigm_dual.read() {
-                            vec![("sg", ""), ("du", ""), ("pl", "")]
-                        } else {
-                            vec![("sg", ""), ("pl", "")]
-                        };
-
                         if let Some(lid) = edit_lemma_id {
                             state.remove_custom_paradigm(lid);
                         }
 
+                        // Collect all non-empty cells from cell_values directly.
+                        // This preserves data for tenses/moods/voices/cases that the
+                        // user may not have selected in the current editing session
+                        // (smart merge: existing cells are loaded at init and kept).
                         let result = if pos_value == "verb" {
-                            let sel_tenses = verb_tenses.read().clone();
-                            let sel_moods  = verb_moods.read().clone();
-                            let sel_voices = verb_voices.read().clone();
                             let mut entries = vec![];
-                            for tense_tag in &sel_tenses {
-                                for mood_tag in &sel_moods {
-                                    for voice_tag in &sel_voices {
-                                        for person_tag in ["1", "2", "3"] {
-                                            for (number_tag, _) in &active_numbers {
-                                                let key = verb_cell_key(tense_tag, mood_tag, voice_tag, person_tag, number_tag);
-                                                let value = cell_values.read().get(&key).cloned().unwrap_or_default();
-                                                if !value.trim().is_empty() {
-                                                    entries.push(CustomVerbFormEntry {
-                                                        tense_tag: tense_tag.clone(),
-                                                        mood_tag: mood_tag.clone(),
-                                                        voice_tag: voice_tag.clone(),
-                                                        person_tag: person_tag.to_string(),
-                                                        number_tag: (*number_tag).to_string(),
-                                                        greek_form: value,
-                                                    });
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            for (key, value) in cell_values.read().iter() {
+                                if value.trim().is_empty() { continue; }
+                                // key format: "verb:{tense}:{mood}:{voice}:{person}:{number}"
+                                let parts: Vec<&str> = key.splitn(6, ':').collect();
+                                if parts.len() != 6 || parts[0] != "verb" { continue; }
+                                entries.push(CustomVerbFormEntry {
+                                    tense_tag:  parts[1].to_string(),
+                                    mood_tag:   parts[2].to_string(),
+                                    voice_tag:  parts[3].to_string(),
+                                    person_tag: parts[4].to_string(),
+                                    number_tag: parts[5].to_string(),
+                                    greek_form: value.clone(),
+                                });
                             }
                             state.add_custom_verb_paradigm(CustomVerbParadigmDraft {
                                 lemma_greek: lemma_value,
@@ -699,31 +686,20 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                                 entries,
                             })
                         } else if pos_value == "participle" {
-                            let sel_tenses  = ptcp_tenses.read().clone();
-                            let sel_voices  = ptcp_voices.read().clone();
-                            let sel_genders = ptcp_genders.read().clone();
                             let mut entries = vec![];
-                            for tense_tag in &sel_tenses {
-                                for voice_tag in &sel_voices {
-                                    for (case_tag, _) in [("nom",""),("gen",""),("dat",""),("acc",""),("voc","")] {
-                                        for (number_tag, _) in &active_numbers {
-                                            for gender_tag in &sel_genders {
-                                                let key = format!("ptcp:{tense_tag}:{voice_tag}:{case_tag}:{number_tag}:{gender_tag}");
-                                                let value = cell_values.read().get(&key).cloned().unwrap_or_default();
-                                                if !value.trim().is_empty() {
-                                                    entries.push(CustomParticipleFormEntry {
-                                                        tense_tag: tense_tag.clone(),
-                                                        voice_tag: voice_tag.clone(),
-                                                        case_tag: case_tag.to_string(),
-                                                        number_tag: (*number_tag).to_string(),
-                                                        gender_tag: gender_tag.clone(),
-                                                        greek_form: value,
-                                                    });
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            for (key, value) in cell_values.read().iter() {
+                                if value.trim().is_empty() { continue; }
+                                // key format: "ptcp:{tense}:{voice}:{case}:{number}:{gender}"
+                                let parts: Vec<&str> = key.splitn(6, ':').collect();
+                                if parts.len() != 6 || parts[0] != "ptcp" { continue; }
+                                entries.push(CustomParticipleFormEntry {
+                                    tense_tag:  parts[1].to_string(),
+                                    voice_tag:  parts[2].to_string(),
+                                    case_tag:   parts[3].to_string(),
+                                    number_tag: parts[4].to_string(),
+                                    gender_tag: parts[5].to_string(),
+                                    greek_form: value.clone(),
+                                });
                             }
                             state.add_custom_participle_paradigm(CustomParticipleDraft {
                                 lemma_greek: lemma_value,
@@ -733,18 +709,15 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
                         } else {
                             let gender_value = paradigm_gender.read().clone();
                             let mut entries = vec![];
-                            for (case_tag, _) in [("nom",""),("gen",""),("dat",""),("acc",""),("voc","")] {
-                                for (number_tag, _) in &active_numbers {
-                                    let key = format!("{case_tag}:{number_tag}");
-                                    let value = cell_values.read().get(&key).cloned().unwrap_or_default();
-                                    if !value.trim().is_empty() {
-                                        entries.push(CustomFormEntry {
-                                            case_tag: case_tag.to_string(),
-                                            number_tag: (*number_tag).to_string(),
-                                            greek_form: value,
-                                        });
-                                    }
-                                }
+                            for (key, value) in cell_values.read().iter() {
+                                if value.trim().is_empty() { continue; }
+                                // key format: "{case}:{number}" (no prefix)
+                                if key.starts_with("verb:") || key.starts_with("ptcp:") { continue; }
+                                let mut parts = key.splitn(2, ':');
+                                let case_tag   = parts.next().unwrap_or("").to_string();
+                                let number_tag = parts.next().unwrap_or("").to_string();
+                                if case_tag.is_empty() || number_tag.is_empty() { continue; }
+                                entries.push(CustomFormEntry { case_tag, number_tag, greek_form: value.clone() });
                             }
                             state.add_custom_nominal_paradigm(CustomNominalParadigmDraft {
                                 lemma_greek: lemma_value,
@@ -757,17 +730,22 @@ pub fn ParadigmBuilderPage(edit_lemma_id: Option<i64>) -> Element {
 
                         match result {
                             Ok(()) => {
-                                *lemma_greek.write()     = String::new();
-                                *translation.write()     = String::new();
-                                *paradigm_gender.write() = String::new();
-                                *paradigm_dual.write()   = false;
-                                *verb_tenses.write()     = vec!["pres".into()];
-                                *verb_moods.write()      = vec!["ind".into()];
-                                *verb_voices.write()     = vec!["act".into()];
-                                *ptcp_tenses.write()     = vec!["pres".into()];
-                                *ptcp_voices.write()     = vec!["act".into()];
-                                *ptcp_genders.write()    = vec!["m".into(), "f".into(), "n".into()];
-                                cell_values.write().clear();
+                                // In create mode, reset the form for a new entry.
+                                // In edit mode, keep the form populated so the user
+                                // can see the saved state and continue editing.
+                                if !is_edit {
+                                    *lemma_greek.write()     = String::new();
+                                    *translation.write()     = String::new();
+                                    *paradigm_gender.write() = String::new();
+                                    *paradigm_dual.write()   = false;
+                                    *verb_tenses.write()     = vec!["pres".into()];
+                                    *verb_moods.write()      = vec!["ind".into()];
+                                    *verb_voices.write()     = vec!["act".into()];
+                                    *ptcp_tenses.write()     = vec!["pres".into()];
+                                    *ptcp_voices.write()     = vec!["act".into()];
+                                    *ptcp_genders.write()    = vec!["m".into(), "f".into(), "n".into()];
+                                    cell_values.write().clear();
+                                }
                                 *save_message.write() = Some(
                                     if is_edit {
                                         t(UiKey::BuilderUpdated, lang.clone()).to_string()

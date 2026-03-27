@@ -391,20 +391,20 @@ body::-webkit-scrollbar {
 
 .home-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
   margin-bottom: 20px;
 }
 
 .stat-badge {
   background: var(--bg2);
   border-radius: var(--radius);
-  padding: 12px;
+  padding: 8px 4px;
   text-align: center;
   border: 1px solid var(--border);
 }
-.stat-badge__value  { display: block; font-size: 1.6rem; font-weight: bold; color: var(--accent); }
-.stat-badge__label  { display: block; font-size: 0.75rem; color: var(--fg2); margin-top: 4px; }
+.stat-badge__value  { display: block; font-size: 1.1rem; font-weight: bold; color: var(--accent); }
+.stat-badge__label  { display: block; font-size: 0.62rem; color: var(--fg2); margin-top: 2px; }
 
 .home-section-title { font-size: 1rem; font-weight: 700; color: var(--fg2); margin-bottom: 12px; }
 
@@ -1346,7 +1346,9 @@ body::-webkit-scrollbar {
   }
   .mode-card { min-height: 80px; padding: 18px 20px; }
   .mode-card__icon { font-size: 2.2rem; }
+  .stat-badge { padding: 12px; }
   .stat-badge__value { font-size: 2rem; }
+  .stat-badge__label { font-size: 0.75rem; margin-top: 4px; }
 }
 
 @media (min-width: 1400px) {

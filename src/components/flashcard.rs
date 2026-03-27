@@ -230,6 +230,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                                     let mut idx = index;
                                                     spawn(async move {
                                                         sleep_ms(800).await;
+                                                        blur_active_element();
                                                         *fb.write() = None;
                                                         *idx.write() += 1;
                                                     });
@@ -240,6 +241,7 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                                     let mut rev = revealed;
                                                     spawn(async move {
                                                         sleep_ms(1500).await;
+                                                        blur_active_element();
                                                         *fb.write() = None;
                                                         *rev.write() = false;
                                                         *idx.write() += 1;
@@ -328,6 +330,18 @@ fn separate_adjacent_lemmas(order: &mut [usize], forms: &[Form], seed: u64) {
 
         if let Some(target) = swap_with {
             order.swap(idx, target);
+        }
+    }
+}
+
+fn blur_active_element() {
+    #[cfg(target_arch = "wasm32")]
+    {
+        use wasm_bindgen::JsCast;
+        if let Some(doc) = web_sys::window().and_then(|w| w.document()) {
+            if let Some(el) = doc.active_element() {
+                let _ = el.dyn_into::<web_sys::HtmlElement>().map(|el| el.blur());
+            }
         }
     }
 }
