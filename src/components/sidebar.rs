@@ -298,9 +298,11 @@ fn LemmaFilterPanel() -> Element {
                 true
             } else {
                 normalize(&lemma.greek, true).to_lowercase().contains(&query_norm)
-                    || lemma.russian
-                        .as_deref()
-                        .map(|russian| russian.to_lowercase().contains(&query_lower))
+                    || lemma.russian.as_deref()
+                        .map(|r| r.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                    || lemma.english.as_deref()
+                        .map(|e| e.to_lowercase().contains(&query_lower))
                         .unwrap_or(false)
             }
         })
@@ -350,7 +352,7 @@ fn LemmaFilterPanel() -> Element {
                             let id = lemma.id;
                             let already = selected_ids.contains(&id);
                             let greek = lemma.greek.clone();
-                            let russian = lemma.russian.clone().unwrap_or_default();
+                            let russian = lemma.translation(&lang).to_string();
                             let pos_label: Option<&'static str> = lemma.part_of_speech
                                 .as_deref()
                                 .map(Pos::from_str)

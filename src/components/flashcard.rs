@@ -157,16 +157,22 @@ pub fn FlashcardView(reverse: bool) -> Element {
                 div { class: "flashcard__prompt",
                     if reverse {
                         if let Some(lemma) = &current_lemma {
-                            if let Some(ru) = &lemma.russian {
-                                p { class: "flashcard__translation", "«{ru}»" }
+                            {
+                                let tr = lemma.translation(&lang);
+                                if !tr.is_empty() {
+                                    rsx! { p { class: "flashcard__translation", "«{tr}»" } }
+                                } else { rsx! {} }
                             }
                         }
                         p { class: "flashcard__grammar", "{current_form.grammar_label(&morph_lang)}" }
                     } else {
                         p { class: "flashcard__lemma greek-text", "{current_form.test_prompt_greek()}" }
                         if let Some(lemma) = &current_lemma {
-                            if let Some(ru) = &lemma.russian {
-                                p { class: "flashcard__translation", "«{ru}»" }
+                            {
+                                let tr = lemma.translation(&lang);
+                                if !tr.is_empty() {
+                                    rsx! { p { class: "flashcard__translation", "«{tr}»" } }
+                                } else { rsx! {} }
                             }
                         }
                     }

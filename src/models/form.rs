@@ -18,6 +18,15 @@ pub struct Lemma {
 
 #[allow(dead_code)]
 impl Lemma {
+    /// Return the translation for the given UI language,
+    /// falling back to the other language if the preferred one is absent.
+    pub fn translation(&self, lang: &UiLanguage) -> &str {
+        match lang {
+            UiLanguage::Ru => self.russian.as_deref().or(self.english.as_deref()).unwrap_or(""),
+            UiLanguage::En => self.english.as_deref().or(self.russian.as_deref()).unwrap_or(""),
+        }
+    }
+
     pub fn display_translation(&self) -> &str {
         self.russian.as_deref().or(self.english.as_deref()).unwrap_or("")
     }

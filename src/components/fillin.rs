@@ -92,8 +92,11 @@ pub fn FillInView() -> Element {
                 div { class: "fillin-card__prompt",
                     if let Some(lemma) = &lemma {
                         p { class: "fillin-card__lemma greek-text", "{lemma.test_prompt_greek()}" }
-                        if let Some(ru) = &lemma.russian {
-                            p { class: "fillin-card__translation", "«{ru}»" }
+                        {
+                            let tr = lemma.translation(&lang);
+                            if !tr.is_empty() {
+                                rsx! { p { class: "fillin-card__translation", "«{tr}»" } }
+                            } else { rsx! {} }
                         }
                     }
                     p { class: "fillin-card__grammar", "{current_form.grammar_label(&morph_lang)}" }

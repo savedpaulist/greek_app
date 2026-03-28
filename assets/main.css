@@ -653,6 +653,25 @@ body::-webkit-scrollbar {
 .paradigm-meta        { font-size: 0.9rem; color: var(--accent); font-weight: 600; padding: 2px 8px; background: color-mix(in srgb, var(--accent) 15%, transparent); border-radius: 12px; }
 .paradigm-translation { color: var(--fg2); font-size: 1.1rem; }
 
+/* ── Verb: grid of small tables ─────────────────────────────────────── */
+.verb-paradigm-blocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.verb-paradigm-block { display: flex; flex-direction: column; gap: 6px; }
+.verb-paradigm-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+/* Verb sub-tables: compact cells */
+.paradigm-table--verb td,
+.paradigm-table--verb th { padding: 5px 10px; font-size: 0.9rem; }
+
 .paradigm-table-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -758,6 +777,36 @@ body::-webkit-scrollbar {
 
 .lemma-list-container::-webkit-scrollbar {
   display: none;
+}
+
+/* Scrollable container for the selected lemma's paradigm table */
+.paradigm-detail-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.paradigm-detail-container::-webkit-scrollbar { display: none; }
+
+/* Verb paradigm filter chips */
+.paradigm-verb-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.paradigm-verb-filter__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .lemma-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }

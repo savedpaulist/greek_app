@@ -51,7 +51,8 @@ pub fn BuildParadigmPage() -> Element {
     let shown: Vec<&Lemma> = lemmas.iter()
         .filter(|l| q.is_empty()
             || l.greek.contains(q.as_str())
-            || l.russian.as_deref().unwrap_or("").to_lowercase().contains(q.as_str()))
+            || l.russian.as_deref().unwrap_or("").to_lowercase().contains(q.as_str())
+            || l.english.as_deref().unwrap_or("").to_lowercase().contains(q.as_str()))
         .take(30)
         .collect();
 
@@ -71,7 +72,7 @@ pub fn BuildParadigmPage() -> Element {
                     {
                         let lid = lemma.id;
                         let greek = lemma.greek.clone();
-                        let trans = lemma.russian.clone().or(lemma.english.clone()).unwrap_or_default();
+                        let trans = lemma.translation(&lang).to_string();
                         let pos = lemma.part_of_speech.clone().unwrap_or_default();
                         rsx! {
                             li { class: "lemma-item",
