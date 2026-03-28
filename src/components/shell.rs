@@ -23,6 +23,7 @@ pub fn Shell() -> Element {
     let settings = state.settings.read();
     let theme = settings.theme.data_attr();
     let greek_font = settings.greek_font.css_family();
+    let size_css = format!("html{{font-size:{}px;}}", settings.ui_size.font_size_px());
     // Build a <style> block containing the custom palette when Custom is active.
     // Using a child <style> element (instead of inline vars on the root div) ensures
     // that Dioxus removes it from the DOM cleanly when switching to a preset theme,
@@ -55,6 +56,7 @@ pub fn Shell() -> Element {
         // Inject custom theme CSS into the document via a <style> element.
         // When the user switches back to a preset theme, Dioxus removes this
         // element and the [data-theme="custom"] rules vanish immediately.
+        style { "{size_css}" }
         if !custom_css.is_empty() {
             style { "{custom_css}" }
         }

@@ -42,21 +42,26 @@ pub fn strip_leading_article(s: &str) -> &str {
 }
 
 /// Normalise a Greek string for comparison.
-/// If `strip` is true, strips all combining diacritical marks (accents,
-/// breathings, iota subscript, etc.) leaving only base letters.
+/// Vowel-length marks (macron U+0304, breve U+0306) are always stripped —
+/// they are not required in answers regardless of the diacritics setting.
+/// If `strip` is true, all other combining diacritical marks (accents,
+/// breathings, iota subscript, etc.) are also stripped, leaving only base
+/// letters.
 pub fn normalize(s: &str, strip: bool) -> String {
-    // First decompose to NFD so combining marks are separate code points
+    // First decompose to NFD so combining marks are separate code points.
     let nfd: String = s.nfd().collect();
+    // Always remove vowel-length marks.
+    let without_length: String = nfd.chars().filter(|c| !is_length_mark(*c)).collect();
     if strip {
-        // Remove combining characters (Unicode category M*)
-        nfd.chars()
+        // Remove all remaining combining characters.
+        without_length
+            .chars()
             .filter(|c| !is_combining(*c))
             .collect::<String>()
-            .nfc() // re-compose what's left
+            .nfc()
             .collect()
     } else {
-        // Just NFC-normalise
-        s.nfc().collect()
+        without_length.nfc().collect()
     }
 }
 
@@ -96,6 +101,13 @@ pub fn diff_chars(answer: &str, expected: &str, ignore_diacritics: bool) -> Vec<
             (c, correct)
         })
         .collect()
+}
+
+fn is_length_mark(c: char) -> bool {
+    matches!(c as u32,
+        0x0304  // COMBINING MACRON  (long vowel: ᾱ, ῑ, ῡ)
+        | 0x0306  // COMBINING BREVE   (short vowel: ᾰ, ῐ, ῠ)
+    )
 }
 
 fn is_combining(c: char) -> bool {

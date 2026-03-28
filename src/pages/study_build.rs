@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use dioxus::prelude::*;
 
+use crate::i18n::{t, UiKey};
 use crate::logic::paradigm::{build_nominal_paradigm, build_verb_paradigm};
 use crate::models::form::Lemma;
 use crate::state::AppState;
@@ -39,6 +40,11 @@ pub fn BuildParadigmPage() -> Element {
         return rsx! { BuildGame { lemma_id: lid, on_back: move |_| *selected_lemma.write() = None } };
     }
 
+    let lang = state.settings.read().language.clone();
+    let title = t(UiKey::ModeBuildTitle, lang.clone());
+    let hint = t(UiKey::BuildSelectWord, lang.clone());
+    let placeholder = t(UiKey::ParadigmSearch, lang.clone());
+
     let lemmas = state.lemmas.read();
     let mut search = use_signal(|| String::new());
     let q = search.read().to_lowercase();
@@ -51,12 +57,12 @@ pub fn BuildParadigmPage() -> Element {
 
     rsx! {
         div { class: "study-page",
-            h2 { class: "study-page__title", "Собери парадигму" }
-            p { class: "study-page__hint", "Выберите слово для тренировки:" }
+            h2 { class: "study-page__title", "{title}" }
+            p { class: "study-page__hint", "{hint}" }
             input {
                 class: "lemma-search",
                 r#type: "search",
-                placeholder: "Поиск…",
+                placeholder: "{placeholder}",
                 value: "{search.read()}",
                 oninput: move |e| *search.write() = e.value(),
             }
@@ -90,9 +96,13 @@ pub fn BuildParadigmPage() -> Element {
 #[component]
 fn BuildGame(lemma_id: i64, on_back: EventHandler<()>) -> Element {
     let state = use_context::<AppState>();
+    let lang = state.settings.read().language.clone();
     let lemma = match state.lemma_by_id(lemma_id) {
         Some(l) => l,
-        None => return rsx! { div { "Лемма не найдена." } },
+        None => {
+            let msg = t(UiKey::ParadigmNotFound, lang);
+            return rsx! { div { "{msg}" } };
+        }
     };
     let forms = state.forms_for_lemma(lemma_id);
     let include_dual = state.settings.read().include_dual;
@@ -165,7 +175,7 @@ fn BuildGame(lemma_id: i64, on_back: EventHandler<()>) -> Element {
                 button {
                     class: "btn btn--ghost btn--sm",
                     onclick: move |_| on_back.call(()),
-                    "← Назад"
+                    "{t(UiKey::Back, lang.clone())}"
                 }
                 span { class: "build-game__lemma greek-text", "{lemma.greek}" }
                 span { class: "build-game__progress", "{filled_count}/{total_cells}" }
@@ -173,7 +183,7 @@ fn BuildGame(lemma_id: i64, on_back: EventHandler<()>) -> Element {
 
             if game_done {
                 div { class: "build-game__done",
-                    p { class: "build-game__done-text", "Отлично! Парадигма собрана." }
+                    p { class: "build-game__done-text", "{t(UiKey::BuildDone, lang.clone())}" }
                     button {
                         class: "btn btn--primary",
                         onclick: move |_| {
@@ -181,7 +191,7 @@ fn BuildGame(lemma_id: i64, on_back: EventHandler<()>) -> Element {
                             *current_idx.write() = 0;
                             *cell_feedback.write() = None;
                         },
-                        "Повторить"
+                        "{t(UiKey::BuildRepeat, lang.clone())}"
                     }
                 }
             } else {

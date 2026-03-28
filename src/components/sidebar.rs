@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use crate::i18n::{t, UiKey};
 use crate::logic::diacritics::normalize;
 use crate::models::{
-    tags::{Case, GNumber, Mood, Person, Tense, Voice},
+    tags::{Case, GNumber, Mood, Person, Pos, Tense, Voice},
     FilterParams,
 };
 use crate::pages::settings::SettingsPanel;
@@ -279,13 +279,20 @@ fn LemmaFilterPanel() -> Element {
     let mut lemma_search = use_signal(|| String::new());
 
     let lemmas = state.lemmas.read().clone();
+    let selected_pos = state.filter.read().pos.clone();
     let query = lemma_search.read().trim().to_string();
     let query_norm = normalize(&query, true).to_lowercase();
     let query_lower = query.to_lowercase();
-    let visible_lemmas: Vec<_> = lemmas.iter()
+    let mut visible_lemmas: Vec<_> = lemmas.iter()
         .filter(|lemma| {
             if !state.lemma_has_paradigm(lemma.id) {
                 return false;
+            }
+            if !selected_pos.is_empty() {
+                let lemma_pos = lemma.part_of_speech.as_deref().unwrap_or("");
+                if !selected_pos.iter().any(|p| p == lemma_pos) {
+                    return false;
+                }
             }
             if query.is_empty() {
                 true
@@ -299,6 +306,9 @@ fn LemmaFilterPanel() -> Element {
         })
         .cloned()
         .collect();
+    visible_lemmas.sort_by(|a, b| {
+        normalize(&a.greek, true).cmp(&normalize(&b.greek, true))
+    });
     let total_matches = visible_lemmas.len();
 
     let selected_ids = state.filter.read().lemma_ids.clone();
@@ -341,6 +351,16 @@ fn LemmaFilterPanel() -> Element {
                             let already = selected_ids.contains(&id);
                             let greek = lemma.greek.clone();
                             let russian = lemma.russian.clone().unwrap_or_default();
+                            let pos_label: Option<&'static str> = lemma.part_of_speech
+                                .as_deref()
+                                .map(Pos::from_str)
+                                .and_then(|pos| match pos {
+                                    Pos::Other => None,
+                                    p => Some(match lang.clone() {
+                                        crate::state::settings::UiLanguage::Ru => p.label_ru(),
+                                        crate::state::settings::UiLanguage::En => p.label_en(),
+                                    }),
+                                });
                             rsx! {
                                 button {
                                     class: if already {
@@ -360,6 +380,9 @@ fn LemmaFilterPanel() -> Element {
                                         span { class: "greek-text", "{greek}" }
                                         if !russian.is_empty() {
                                             span { class: "lemma-filter-item__translation", "{russian}" }
+                                        }
+                                        if let Some(label) = pos_label {
+                                            span { class: "lemma-filter-item__pos", "{label}" }
                                         }
                                     }
                                 }

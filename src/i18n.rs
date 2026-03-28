@@ -31,6 +31,8 @@ pub enum UiKey {
     // ── Settings ─────────────────────────────────────────────────────────────
     SettingsTitle,
     SettingsTheme,
+    SettingsThemePrev,
+    SettingsThemeNext,
     SettingsFont,
     SettingsOptions,
     SettingsIgnoreDiacritics,
@@ -39,6 +41,10 @@ pub enum UiKey {
     SettingsLang,
     SettingsLangUi,
     SettingsLangMorph,
+    SettingsUiSize,
+    SettingsUiSizeSmall,
+    SettingsUiSizeMedium,
+    SettingsUiSizeLarge,
     // Custom theme editor
     ThemeCustomEdit,
     ThemeColorBg,
@@ -99,6 +105,11 @@ pub enum UiKey {
     ModeFillInDesc,
     ModeBuilderTitle,
     ModeBuilderDesc,
+    ModeBuildTitle,
+    // ── Build game ───────────────────────────────────────────────────────────
+    BuildSelectWord,
+    BuildDone,
+    BuildRepeat,
     // ── Flashcard ────────────────────────────────────────────────────────────
     FlashcardShow,
     FlashcardRetry,
@@ -108,6 +119,7 @@ pub enum UiKey {
     // ── Fill-in ──────────────────────────────────────────────────────────────
     FillInSubmit,
     FillInNext,
+    FillInSkip,
     FillInAnswer,
     FillInPlaceholder,
     FillInHintDiacriticsOff,
@@ -169,6 +181,8 @@ impl UiKey {
 
             UiKey::SettingsTitle => "Настройки",
             UiKey::SettingsTheme => "Тема",
+            UiKey::SettingsThemePrev => "Предыдущая тема",
+            UiKey::SettingsThemeNext => "Следующая тема",
             UiKey::SettingsFont => "Шрифт для греческого",
             UiKey::SettingsOptions => "Опции",
             UiKey::SettingsIgnoreDiacritics => "Игнорировать диакритику при проверке",
@@ -177,6 +191,10 @@ impl UiKey {
             UiKey::SettingsLang => "Язык",
             UiKey::SettingsLangUi => "Интерфейс",
             UiKey::SettingsLangMorph => "Морфология",
+            UiKey::SettingsUiSize => "Размер интерфейса",
+            UiKey::SettingsUiSizeSmall => "Маленький",
+            UiKey::SettingsUiSizeMedium => "Средний",
+            UiKey::SettingsUiSizeLarge => "Большой",
 
             UiKey::ThemeCustomEdit => "Редактировать цвета",
             UiKey::ThemeColorBg => "Фон",
@@ -235,6 +253,11 @@ impl UiKey {
             UiKey::ModeFillInDesc => "Введите форму по грамматическому описанию",
             UiKey::ModeBuilderTitle => "Своя парадигма",
             UiKey::ModeBuilderDesc => "Создайте и изучайте свои таблицы форм",
+            UiKey::ModeBuildTitle => "Собери парадигму",
+
+            UiKey::BuildSelectWord => "Выберите слово для тренировки:",
+            UiKey::BuildDone => "Отлично! Парадигма собрана.",
+            UiKey::BuildRepeat => "Повторить",
 
             UiKey::FlashcardShow => "Показать ответ",
             UiKey::FlashcardRetry => "Ещё раз",
@@ -244,6 +267,7 @@ impl UiKey {
 
             UiKey::FillInSubmit => "Проверить →",
             UiKey::FillInNext => "Далее →",
+            UiKey::FillInSkip => "Следующий →",
             UiKey::FillInAnswer => "Правильно:",
             UiKey::FillInPlaceholder => "Введите форму…",
             UiKey::FillInHintDiacriticsOff => "⌨️ Диакритика игнорируется",
@@ -305,6 +329,8 @@ impl UiKey {
 
             UiKey::SettingsTitle => "Settings",
             UiKey::SettingsTheme => "Theme",
+            UiKey::SettingsThemePrev => "Previous theme",
+            UiKey::SettingsThemeNext => "Next theme",
             UiKey::SettingsFont => "Greek font",
             UiKey::SettingsOptions => "Options",
             UiKey::SettingsIgnoreDiacritics => "Ignore diacritics when checking",
@@ -313,6 +339,10 @@ impl UiKey {
             UiKey::SettingsLang => "Language",
             UiKey::SettingsLangUi => "Interface",
             UiKey::SettingsLangMorph => "Morphology",
+            UiKey::SettingsUiSize => "Interface size",
+            UiKey::SettingsUiSizeSmall => "Small",
+            UiKey::SettingsUiSizeMedium => "Medium",
+            UiKey::SettingsUiSizeLarge => "Large",
 
             UiKey::ThemeCustomEdit => "Edit colours",
             UiKey::ThemeColorBg => "Background",
@@ -371,6 +401,11 @@ impl UiKey {
             UiKey::ModeFillInDesc => "Enter the form by its grammar description",
             UiKey::ModeBuilderTitle => "Custom paradigm",
             UiKey::ModeBuilderDesc => "Create and study your own form tables",
+            UiKey::ModeBuildTitle => "Assemble the paradigm",
+
+            UiKey::BuildSelectWord => "Choose a word to practise:",
+            UiKey::BuildDone => "All done! Paradigm complete.",
+            UiKey::BuildRepeat => "Repeat",
 
             UiKey::FlashcardShow => "Show answer",
             UiKey::FlashcardRetry => "Try again",
@@ -380,6 +415,7 @@ impl UiKey {
 
             UiKey::FillInSubmit => "Check →",
             UiKey::FillInNext => "Next →",
+            UiKey::FillInSkip => "Next →",
             UiKey::FillInAnswer => "Correct:",
             UiKey::FillInPlaceholder => "Enter form…",
             UiKey::FillInHintDiacriticsOff => "⌨️ Diacritics ignored",

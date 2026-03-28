@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use crate::{
     i18n::{t, UiKey},
     state::{
-        settings::{GreekFont, Theme, UiLanguage},
+        settings::{GreekFont, Theme, UiLanguage, UiSize},
         AppState,
     },
 };
@@ -86,7 +86,7 @@ pub fn SettingsPanel() -> Element {
                 div { class: "theme-nav-row",
                     button {
                         class: "btn btn--ghost btn--sm",
-                        title: "Предыдущая тема",
+                        title: t(UiKey::SettingsThemePrev, lang.clone()),
                         onclick: move |_| {
                             let mut settings = state.settings.write();
                             let all = Theme::all();
@@ -103,7 +103,7 @@ pub fn SettingsPanel() -> Element {
                     span { class: "theme-nav-row__label", "{settings_snapshot.theme.label()}" }
                     button {
                         class: "btn btn--ghost btn--sm",
-                        title: "Следующая тема",
+                        title: t(UiKey::SettingsThemeNext, lang.clone()),
                         onclick: move |_| {
                             let mut settings = state.settings.write();
                             let all = Theme::all();
@@ -180,6 +180,39 @@ pub fn SettingsPanel() -> Element {
                                 }
                             },
                             "αβγδεζ — {font.label()}"
+                        }
+                    }
+                }
+            }
+
+            // ── UI Size ───────────────────────────────────────────────────
+            section { class: "settings-section",
+                h3 { class: "settings-section__title", "{t(UiKey::SettingsUiSize, lang.clone())}" }
+                div { class: "lang-chips",
+                    for size in [UiSize::Small, UiSize::Medium, UiSize::Large] {
+                        {
+                            let label = match size {
+                                UiSize::Small => t(UiKey::SettingsUiSizeSmall, lang.clone()),
+                                UiSize::Medium => t(UiKey::SettingsUiSizeMedium, lang.clone()),
+                                UiSize::Large => t(UiKey::SettingsUiSizeLarge, lang.clone()),
+                            };
+                            rsx! {
+                                button {
+                                    class: if settings_snapshot.ui_size == size {
+                                        "lang-chip lang-chip--active"
+                                    } else {
+                                        "lang-chip"
+                                    },
+                                    onclick: {
+                                        let size = size.clone();
+                                        move |_| {
+                                            state.settings.write().ui_size = size.clone();
+                                            state.save_settings();
+                                        }
+                                    },
+                                    "{label}"
+                                }
+                            }
                         }
                     }
                 }

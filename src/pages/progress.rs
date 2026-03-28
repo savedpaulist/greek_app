@@ -13,7 +13,7 @@ pub fn ProgressPage() -> Element {
 
     rsx! {
         div { class: "progress-page",
-            h2 { class: "progress-page__title", "📊 {t(UiKey::ProgressTitle, lang.clone())}" }
+            h2 { class: "progress-page__title", "{t(UiKey::ProgressTitle, lang.clone())}" }
 
             div { class: "progress-overview",
                 StatRow { label: t(UiKey::ProgressStatForms, lang.clone()).to_string(), value: stats.total.to_string() }

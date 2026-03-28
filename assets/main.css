@@ -823,7 +823,9 @@ body::-webkit-scrollbar {
 .settings-help { color: var(--fg2); font-size: 0.9rem; margin-bottom: 12px; }
 .settings-help--status { margin-top: 12px; margin-bottom: 0; }
 
-.theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); gap: 8px; overflow-x: hidden; }
+.theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(7.5rem, 45%), 1fr)); gap: 8px; overflow-x: hidden; }
+/* Inside the narrow sidebar, always use 2 columns regardless of font size */
+.sidebar .theme-grid { grid-template-columns: repeat(2, 1fr); }
 .theme-nav-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .theme-nav-row__label { flex: 1; text-align: center; font-size: 0.9rem; font-weight: 600; color: var(--fg); }
 .theme-chip {
@@ -835,7 +837,9 @@ body::-webkit-scrollbar {
   cursor: pointer;
   font-size: 0.85rem;
   min-height: 44px;
+  min-width: 0;
   text-align: center;
+  word-break: break-word;
   transition: border-color 0.15s;
 }
 .theme-chip:hover { border-color: var(--accent); }
@@ -1169,6 +1173,38 @@ body::-webkit-scrollbar {
 .fillin-card--correct { border-color: var(--correct); background: color-mix(in srgb, var(--correct) 10%, var(--bg2)); }
 .fillin-card--wrong   { border-color: var(--wrong);   background: color-mix(in srgb, var(--wrong)   10%, var(--bg2)); }
 
+/* ── Fill-in auto-advance (wrong answer) ─────────────────────────────── */
+.fillin-auto-advance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+.timer-circle {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+.timer-circle__track {
+  fill: none;
+  stroke: var(--bg3);
+}
+.timer-circle__fill {
+  fill: none;
+  stroke: var(--wrong);
+  /* circumference = 2π × 16 ≈ 100.53 */
+  stroke-dasharray: 100.53;
+  stroke-dashoffset: 100.53;
+  stroke-linecap: round;
+  animation: timer-fill 4s linear forwards;
+}
+@keyframes timer-fill {
+  from { stroke-dashoffset: 100.53; }
+  to   { stroke-dashoffset: 0; }
+}
+
 /* ── Sidebar tag/lemma filter additions ──────────────────────────────── */
 .sidebar__section-subtitle {
   font-size: 0.78rem;
@@ -1181,6 +1217,7 @@ body::-webkit-scrollbar {
 }
 .filter-chips--sm { gap: 5px; }
 .chip--sm { font-size: 0.78rem; padding: 4px 9px; min-height: 30px; }
+.sidebar__section > .btn { margin-top: 16px; }
 
 .lemma-search-input {
   width: 100%;
@@ -1350,6 +1387,7 @@ body::-webkit-scrollbar {
   .flashcard, .fillin-card { max-width: 580px; margin: 0 auto; }
   .mc-choices { gap: 10px; }
   .theme-grid { grid-template-columns: repeat(4, 1fr); }
+  .sidebar .theme-grid { grid-template-columns: repeat(2, 1fr); }
   .theme-color-grid { grid-template-columns: repeat(3, 1fr); }
   .sidebar--settings {
     width: min(100vw, 320px);

@@ -52,8 +52,6 @@ enum CardPhase {
     Choosing,
     /// Brief feedback panel (NO choice buttons in DOM) — auto-advances.
     Feedback { is_correct: bool },
-    /// User clicked "Show answer" — showing the answer with rating buttons.
-    Revealed,
 }
 
 // ── FlashcardView ─────────────────────────────────────────────────────────
@@ -81,6 +79,9 @@ pub fn FlashcardView(reverse: bool) -> Element {
     let mut index = use_signal(|| 0usize);
     let mut session_correct: Signal<u32> = use_signal(|| 0);
     let mut shuffle_seed = use_signal(fresh_shuffle_seed);
+    // Incremented each time a wrong-answer feedback starts or is skipped.
+    // Spawned tasks capture this value and no-op if it has changed.
+    let mut feedback_gen: Signal<u32> = use_signal(|| 0);
 
     let order = build_shuffled_order(&forms, *shuffle_seed.read());
 
@@ -136,7 +137,6 @@ pub fn FlashcardView(reverse: bool) -> Element {
         _ => None,
     };
     let is_choosing = matches!(phase_val, CardPhase::Choosing);
-    let is_revealed = matches!(phase_val, CardPhase::Revealed);
 
     rsx! {
         div { class: "flashcard-screen",
@@ -203,15 +203,22 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                                 *phase.write() = CardPhase::Feedback {
                                                     is_correct: is_correct_choice,
                                                 };
-                                                let delay = if is_correct_choice { 800_i32 } else { 1500_i32 };
+                                                let delay = if is_correct_choice { 800_i32 } else { 4000_i32 };
                                                 let mut ph = phase;
                                                 let mut idx = index;
+                                                if !is_correct_choice {
+                                                    *feedback_gen.write() += 1;
+                                                }
+                                                let gen = *feedback_gen.read();
+                                                let mut fgen = feedback_gen;
                                                 spawn(async move {
                                                     sleep_ms(delay).await;
-                                                    // Increment index first so the new question
-                                                    // data is ready when buttons re-appear.
-                                                    *idx.write() += 1;
-                                                    *ph.write() = CardPhase::Choosing;
+                                                    // Only advance if this feedback hasn't been skipped.
+                                                    if *fgen.read() == gen {
+                                                        let next = *idx.read() + 1;
+                                                        *idx.write() = next;
+                                                        *ph.write() = CardPhase::Choosing;
+                                                    }
                                                 });
                                             },
                                             if reverse {
@@ -223,11 +230,6 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                     }
                                 }
                             }
-                        }
-                        button {
-                            class: "btn btn--ghost btn--sm",
-                            onclick: move |_| *phase.write() = CardPhase::Revealed,
-                            "{t(UiKey::FlashcardShow, lang.clone())}"
                         }
                     }
 
@@ -243,46 +245,31 @@ pub fn FlashcardView(reverse: bool) -> Element {
                                 if is_correct { "✓" } else { "✗" }
                             }
                             p { class: "feedback-panel__answer greek-text", "{answer_text}" }
-                        }
-                    }
-
-                    // ── REVEALED: answer text + rating buttons ─────────────────
-                    if is_revealed {
-                        div { class: "flashcard__reveal",
-                            p { class: "flashcard__answer greek-text", "{answer_text}" }
-                            div { class: "flashcard__buttons",
-                                button {
-                                    class: "btn btn--danger",
-                                    onclick: move |_| {
-                                        state.record_answer(current_form.id, 1);
-                                        *index.write() += 1;
-                                        *phase.write() = CardPhase::Choosing;
-                                    },
-                                    "{t(UiKey::FlashcardNoKnow, lang.clone())}"
-                                }
-                                button {
-                                    class: "btn btn--warning",
-                                    onclick: move |_| {
-                                        state.record_answer(current_form.id, 3);
-                                        *session_correct.write() += 1;
-                                        *index.write() += 1;
-                                        *phase.write() = CardPhase::Choosing;
-                                    },
-                                    "{t(UiKey::FlashcardHard, lang.clone())}"
-                                }
-                                button {
-                                    class: "btn btn--success",
-                                    onclick: move |_| {
-                                        state.record_answer(current_form.id, 5);
-                                        *session_correct.write() += 1;
-                                        *index.write() += 1;
-                                        *phase.write() = CardPhase::Choosing;
-                                    },
-                                    "{t(UiKey::FlashcardKnow, lang.clone())}"
+                            if !is_correct {
+                                div { class: "fillin-auto-advance",
+                                    svg {
+                                        class: "timer-circle",
+                                        view_box: "0 0 36 36",
+                                        xmlns: "http://www.w3.org/2000/svg",
+                                        circle { class: "timer-circle__track", cx: "18", cy: "18", r: "16", stroke_width: "3" }
+                                        circle { class: "timer-circle__fill",  cx: "18", cy: "18", r: "16", stroke_width: "3" }
+                                    }
+                                    button {
+                                        class: "btn btn--ghost btn--sm",
+                                        onclick: move |_| {
+                                            // Invalidate pending spawn before advancing.
+                                            *feedback_gen.write() += 1;
+                                            let next = *index.read() + 1;
+                                            *index.write() = next;
+                                            *phase.write() = CardPhase::Choosing;
+                                        },
+                                        "{t(UiKey::FillInSkip, lang.clone())}"
+                                    }
                                 }
                             }
                         }
                     }
+
                 }
             }
         }

@@ -180,6 +180,24 @@ impl GreekFont {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub enum UiSize {
+    Small,
+    #[default]
+    Medium,
+    Large,
+}
+
+impl UiSize {
+    pub fn font_size_px(&self) -> u8 {
+        match self {
+            UiSize::Small => 14,
+            UiSize::Medium => 16,
+            UiSize::Large => 18,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum UiLanguage {
     #[default]
     Ru,
@@ -226,6 +244,8 @@ pub struct Settings {
     pub show_transliteration: bool,
     pub show_translation: bool,
     pub include_dual: bool,
+    #[serde(default)]
+    pub ui_size: UiSize,
     /// First launch done (onboarding seen).
     pub onboarding_done: bool,
 }
@@ -243,6 +263,7 @@ impl Default for Settings {
             show_transliteration: false,
             show_translation: true,
             include_dual: false,
+            ui_size: UiSize::Medium,
             onboarding_done: false,
         }
     }
