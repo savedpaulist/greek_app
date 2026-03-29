@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+#[cfg(target_arch = "wasm32")]
+use js_sys;
 
 use crate::{
     i18n::{t, UiKey},
@@ -218,6 +220,9 @@ pub fn SettingsPanel() -> Element {
                 }
             }
 
+            // ── Install app ───────────────────────────────────────────────
+            InstallSection { lang: lang.clone() }
+
             // ── Options ───────────────────────────────────────────────────
             section { class: "settings-section",
                 h3 { class: "settings-section__title", "{t(UiKey::SettingsOptions, lang.clone())}" }
@@ -254,6 +259,49 @@ pub fn SettingsPanel() -> Element {
                     }
                     span { "{t(UiKey::SettingsIncludeDual, lang.clone())}" }
                 }
+            }
+        }
+    }
+}
+
+// ── Install-app section ──────────────────────────────────────────────────────
+
+#[component]
+fn InstallSection(lang: crate::state::settings::UiLanguage) -> Element {
+    // Detect on mount whether the PWA install prompt is available.
+    // pwaCanInstall() is exposed by pwa-install.js and returns true when:
+    //   - not already running as a standalone PWA, AND
+    //   - either a deferred Chrome/Android prompt is captured, or it's iOS Safari.
+    let mut can_install = use_signal(|| false);
+
+    use_effect(move || {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let result = js_sys::eval("!!(window.pwaCanInstall && window.pwaCanInstall())")
+                .ok()
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            can_install.set(result);
+        }
+    });
+
+    if !can_install() {
+        return rsx! {};
+    }
+
+    rsx! {
+        section { class: "settings-section",
+            h3 { class: "settings-section__title", "{t(UiKey::SettingsInstall, lang.clone())}" }
+            p { class: "settings-help", "{t(UiKey::SettingsInstallDesc, lang.clone())}" }
+            button {
+                class: "btn btn--primary btn--sm",
+                onclick: move |_| {
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        let _ = js_sys::eval("window.pwaInstall && window.pwaInstall()");
+                    }
+                },
+                "{t(UiKey::SettingsInstallBtn, lang.clone())}"
             }
         }
     }

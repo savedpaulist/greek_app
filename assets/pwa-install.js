@@ -384,50 +384,59 @@
     );
   }
 
+  /* ── Module-level deferred prompt (captured early, used by button) ─────── */
+
+  let _deferredPrompt = null;
+
+  /* ── Public API (called from settings button) ───────────────────────────── */
+
+  /**
+   * Returns true when the browser supports installation and the app is not
+   * already installed.  Works for Chrome/Edge/Android (beforeinstallprompt)
+   * and iOS Safari (manual add-to-home-screen flow).
+   */
+  window.pwaCanInstall = function () {
+    if (isAlreadyInstalled()) return false;
+    return !!_deferredPrompt || isIosSafari();
+  };
+
+  /**
+   * Trigger the install flow:
+   *   - Chrome/Android: native browser install dialog.
+   *   - iOS Safari:     slide-up instruction banner.
+   */
+  window.pwaInstall = async function () {
+    if (isAlreadyInstalled()) return;
+    injectStyles();
+    if (_deferredPrompt) {
+      _deferredPrompt.prompt();
+      const { outcome } = await _deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        _deferredPrompt = null;
+        clearDismissal();
+      }
+    } else if (isIosSafari()) {
+      const existing = document.getElementById('pwa-install-banner');
+      if (!existing) {
+        showBanner(buildIosBanner());
+      }
+    }
+  };
+
   /* ── Main logic ─────────────────────────────────────────────────────────── */
 
   function init() {
-    // Never show when already running as an installed PWA
     if (isAlreadyInstalled()) return;
 
-    // Respect recent dismissal
-    if (wasDismissedRecently()) return;
-
-    injectStyles();
-
-    if (isIosSafari()) {
-      // iOS Safari: no beforeinstallprompt — show manual instructions
-      setTimeout(() => {
-        // Re-check in case the user managed to navigate away or install
-        if (isAlreadyInstalled() || wasDismissedRecently()) return;
-        const banner = buildIosBanner();
-        showBanner(banner);
-      }, SHOW_DELAY_MS);
-      return;
-    }
-
-    // Chrome / Android / Edge / Samsung Internet
-    // The browser fires `beforeinstallprompt` when all PWA criteria are met.
-    // We intercept and defer it so we can show our own UI instead of the
-    // browser's mini-infobar.
-    let deferredPrompt = null;
-
+    // Capture beforeinstallprompt early so the settings button can use it.
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent the automatic mini-infobar from appearing on mobile
       e.preventDefault();
-      deferredPrompt = e;
-
-      setTimeout(() => {
-        if (!deferredPrompt) return;
-        if (isAlreadyInstalled() || wasDismissedRecently()) return;
-        const banner = buildChromeBanner(deferredPrompt);
-        showBanner(banner);
-      }, SHOW_DELAY_MS);
+      _deferredPrompt = e;
     });
 
     // Clean up if the user installs via another mechanism (browser menu, etc.)
     window.addEventListener('appinstalled', () => {
-      deferredPrompt = null;
+      _deferredPrompt = null;
       clearDismissal();
       const existing = document.getElementById('pwa-install-banner');
       if (existing) hideBanner(existing);

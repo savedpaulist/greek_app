@@ -45,6 +45,10 @@ pub enum UiKey {
     SettingsUiSizeSmall,
     SettingsUiSizeMedium,
     SettingsUiSizeLarge,
+    // Install app
+    SettingsInstall,
+    SettingsInstallDesc,
+    SettingsInstallBtn,
     // Custom theme editor
     ThemeCustomEdit,
     ThemeColorBg,
@@ -209,6 +213,9 @@ impl UiKey {
             UiKey::SettingsUiSizeSmall => "Маленький",
             UiKey::SettingsUiSizeMedium => "Средний",
             UiKey::SettingsUiSizeLarge => "Большой",
+            UiKey::SettingsInstall => "Установить приложение",
+            UiKey::SettingsInstallDesc => "Добавьте приложение на главный экран для быстрого доступа без браузера.",
+            UiKey::SettingsInstallBtn => "Установить",
 
             UiKey::ThemeCustomEdit => "Редактировать цвета",
             UiKey::ThemeColorBg => "Фон",
@@ -371,6 +378,9 @@ impl UiKey {
             UiKey::SettingsUiSizeSmall => "Small",
             UiKey::SettingsUiSizeMedium => "Medium",
             UiKey::SettingsUiSizeLarge => "Large",
+            UiKey::SettingsInstall => "Install app",
+            UiKey::SettingsInstallDesc => "Add the app to your home screen for quick access without a browser.",
+            UiKey::SettingsInstallBtn => "Install",
 
             UiKey::ThemeCustomEdit => "Edit colours",
             UiKey::ThemeColorBg => "Background",
