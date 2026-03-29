@@ -87,6 +87,10 @@ jobs:
         run: |
           cp assets/manifest.json dist/manifest.json
           cp assets/sw.js dist/sw.js
+          cp assets/pwa-install.js dist/pwa-install.js
+          # Inject pwa-install.js as a static script before WASM so it
+          # registers the beforeinstallprompt listener in time.
+          sed -i 's|</head>|<script src="/greek_app/pwa-install.js" defer></script></head>|' dist/index.html
           # 404.html needed for SPA routing on GitHub Pages
           cp dist/index.html dist/404.html
 
