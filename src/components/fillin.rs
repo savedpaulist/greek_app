@@ -42,6 +42,7 @@ pub fn FillInView() -> Element {
     }
 
     let total = forms.len();
+    let shuffled = use_signal(|| crate::logic::shuffled_indices(total));
     let mut index = use_signal(|| 0usize);
     let mut input_value = use_signal(|| String::new());
     let mut submitted = use_signal(|| false);
@@ -50,7 +51,7 @@ pub fn FillInView() -> Element {
     let mut question_gen = use_signal(|| 0u32);
 
     let ignore_diacritics = state.settings.read().ignore_diacritics;
-    let current_form = forms[*index.read() % total].clone();
+    let current_form = forms[shuffled.read()[*index.read() % total]].clone();
     let lemma = state.lemma_by_id(current_form.lemma_id);
     let expected = current_form.greek_form.clone();
     let expected2 = expected.clone();
