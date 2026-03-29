@@ -43,9 +43,9 @@ jobs:
 
       - name: Normalize dist to upload root
         run: |
-          if [ -d "target/dx/morph-app/release/web/public" ]; then
+          if [ -d "target/dx/greek_morph/release/web/public" ]; then
             mkdir -p dist
-            cp -r target/dx/morph-app/release/web/public/. dist/
+            cp -r target/dx/greek_morph/release/web/public/. dist/
           elif [ -f "dist/index.html" ]; then
             echo "dist/ already correct"
           else
