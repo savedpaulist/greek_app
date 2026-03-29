@@ -5,6 +5,22 @@ use crate::logic::diacritics::{compare_greek, diff_chars, strip_leading_article}
 use crate::logic::sm2::quality_from_answer;
 use crate::state::AppState;
 
+const SESSION_SIZE: usize = 10;
+
+const PEPE_IMGS: [Asset; 11] = [
+    asset!("/assets/pepe/pepe_0.png"),
+    asset!("/assets/pepe/pepe_1.png"),
+    asset!("/assets/pepe/pepe_2.png"),
+    asset!("/assets/pepe/pepe_3.png"),
+    asset!("/assets/pepe/pepe_4.png"),
+    asset!("/assets/pepe/pepe_5.png"),
+    asset!("/assets/pepe/pepe_6.png"),
+    asset!("/assets/pepe/pepe_7.png"),
+    asset!("/assets/pepe/pepe_8.png"),
+    asset!("/assets/pepe/pepe_9.png"),
+    asset!("/assets/pepe/pepe_10.png"),
+];
+
 // ── WASM async sleep helper ───────────────────────────────────────────────
 
 #[cfg(target_arch = "wasm32")]
@@ -42,16 +58,47 @@ pub fn FillInView() -> Element {
     }
 
     let total = forms.len();
+    let session_count = total.min(SESSION_SIZE);
     let shuffled = use_signal(|| crate::logic::shuffled_indices(total));
     let mut index = use_signal(|| 0usize);
+    let mut session_correct: Signal<u32> = use_signal(|| 0);
     let mut input_value = use_signal(|| String::new());
     let mut submitted = use_signal(|| false);
     let mut is_correct = use_signal(|| false);
     // Incremented on every navigation to invalidate pending auto-advance tasks.
     let mut question_gen = use_signal(|| 0u32);
 
+    // ── Session results screen ────────────────────────────────────────────
+    if *index.read() >= session_count {
+        let correct = (*session_correct.read() as usize).min(10);
+        let pepe_src = PEPE_IMGS[correct];
+        return rsx! {
+            div { class: "session-results",
+                h2 { class: "session-results__score",
+                    "{*session_correct.read()}/{session_count}"
+                }
+                img {
+                    class: "session-results__pepe",
+                    src: pepe_src,
+                    alt: "результат",
+                }
+                button {
+                    class: "btn btn--primary",
+                    onclick: move |_| {
+                        *index.write() = 0;
+                        *session_correct.write() = 0;
+                        *submitted.write() = false;
+                        *input_value.write() = String::new();
+                        *question_gen.write() += 1;
+                    },
+                    "{t(UiKey::FlashcardRetry, lang.clone())}"
+                }
+            }
+        };
+    }
+
     let ignore_diacritics = state.settings.read().ignore_diacritics;
-    let current_form = forms[shuffled.read()[*index.read() % total]].clone();
+    let current_form = forms[shuffled.read()[*index.read()]].clone();
     let lemma = state.lemma_by_id(current_form.lemma_id);
     let expected = current_form.greek_form.clone();
     let expected2 = expected.clone();
@@ -78,9 +125,9 @@ pub fn FillInView() -> Element {
             div { class: "session-progress",
                 div {
                     class: "session-progress__bar",
-                    style: "width: {(*index.read() * 100 / total)}%;",
+                    style: "width: {(*index.read() * 100 / session_count)}%;",
                 }
-                span { class: "session-progress__label", "{*index.read() + 1}/{total}" }
+                span { class: "session-progress__label", "{*index.read() + 1}/{session_count}" }
             }
 
             div {
@@ -140,10 +187,8 @@ pub fn FillInView() -> Element {
                                 button {
                                     class: "btn btn--ghost btn--sm",
                                     onclick: move |_| {
-                                        // Invalidate the pending auto-advance task.
                                         *question_gen.write() += 1;
-                                        let next = (*index.read() + 1) % total;
-                                        *index.write() = next;
+                                        *index.write() += 1;
                                         *submitted.write() = false;
                                         *input_value.write() = String::new();
                                     },
@@ -156,8 +201,7 @@ pub fn FillInView() -> Element {
                                 class: "btn btn--primary",
                                 onclick: move |_| {
                                     *question_gen.write() += 1;
-                                    let next = (*index.read() + 1) % total;
-                                    *index.write() = next;
+                                    *index.write() += 1;
                                     *submitted.write() = false;
                                     *input_value.write() = String::new();
                                 },
@@ -177,6 +221,7 @@ pub fn FillInView() -> Element {
                                     let ok = compare_greek(&input_value.read(), &expected, ignore_diacritics);
                                     let q = quality_from_answer(ok, false);
                                     state.record_answer(current_form.id, q);
+                                    if ok { *session_correct.write() += 1; }
                                     *is_correct.write() = ok;
                                     *submitted.write() = true;
                                     if !ok {
@@ -189,8 +234,7 @@ pub fn FillInView() -> Element {
                                             sleep_ms(4000).await;
                                             if *qgen.read() == gen {
                                                 *qgen.write() += 1;
-                                                let next = (*idx.read() + 1) % total;
-                                                *idx.write() = next;
+                                                *idx.write() += 1;
                                                 *sub.write() = false;
                                                 *inp.write() = String::new();
                                             }
@@ -207,6 +251,7 @@ pub fn FillInView() -> Element {
                                     let ok = compare_greek(&input_value.read(), &expected2, ignore_diacritics);
                                     let q = quality_from_answer(ok, false);
                                     state.record_answer(current_form.id, q);
+                                    if ok { *session_correct.write() += 1; }
                                     *is_correct.write() = ok;
                                     *submitted.write() = true;
                                     if !ok {
@@ -219,8 +264,7 @@ pub fn FillInView() -> Element {
                                             sleep_ms(4000).await;
                                             if *qgen.read() == gen {
                                                 *qgen.write() += 1;
-                                                let next = (*idx.read() + 1) % total;
-                                                *idx.write() = next;
+                                                *idx.write() += 1;
                                                 *sub.write() = false;
                                                 *inp.write() = String::new();
                                             }
