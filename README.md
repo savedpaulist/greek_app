@@ -1,50 +1,13 @@
-# Development
+this app is for learning Greek Morphology. You can choose theme, font. English/Russian language. The best choise is to open <https://savedpaulist.github.io/greek_app/> and watch the app youself.
 
-Your new bare-bones project includes minimal organization with a single `main.rs` file and a few assets.
+## Screenshots
 
-```
-project/
-├─ assets/ # Any assets that are used by the app should be placed here
-├─ src/
-│  ├─ main.rs # main.rs is the entry point to your application and currently contains all components for the app
-├─ Cargo.toml # The Cargo.toml file defines the dependencies and feature flags for your project
-```
-
-### Automatic Tailwind (Dioxus 0.7+)
-
-As of Dioxus 0.7, there no longer is a need to manually install tailwind. Simply `dx serve` and you're good to go!
-
-Automatic tailwind is supported by checking for a file called `tailwind.css` in your app's manifest directory (next to Cargo.toml). To customize the file, use the dioxus.toml:
-
-```toml
-[application]
-tailwind_input = "my.css"
-tailwind_output = "assets/out.css" # also customize the location of the out file!
-```
-
-### Tailwind Manual Install
-
-To use tailwind plugins or manually customize tailwind, you can can install the Tailwind CLI and use it directly.
-
-### Tailwind
-1. Install npm: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
-2. Install the Tailwind CSS CLI: https://tailwindcss.com/docs/installation/tailwind-cli
-3. Run the following command in the root of the project to start the Tailwind CSS compiler:
-
-```bash
-npx @tailwindcss/cli -i ./input.css -o ./assets/tailwind.css --watch
-```
-
-### Serving Your App
-
-Run the following command in the root of your project to start developing with the default platform:
-
-```bash
-dx serve
-```
-
-To run for a different platform, use the `--platform platform` flag. E.g.
-```bash
-dx serve --platform desktop
-```
-
+<p align="center">
+ <img src="screenshots_git/Screenshot 2026-03-28 at 02.04.11.png" width="250" />
+ <img src="screenshots_git/Screenshot 2026-03-29 at 16.06.05.png" width="250" />
+ <img src="screenshots_git/Screenshot 2026-03-29 at 16.06.15.png" width="250" />
+ <img src="screenshots_git/Screenshot 2026-03-29 at 16.06.23.png" width="250" />
+ <img src="screenshots_git/Screenshot 2026-03-29 at 16.06.36.png" width="250" />
+ <img src="screenshots_git/Screenshot 2026-03-29 at 16.06.51.png" width="250" />
+ <img src="screenshots_git/Screenshot 2026-03-29 at 16.07.07.png" width="250" />
+</p>
