@@ -31,6 +31,9 @@ if ('serviceWorker' in navigator) {
 "#;
 
 fn main() {
+    // #[cfg(debug_assertions)]
+    // dioxus_devtools::init(); 
+    
     dioxus::launch(App);
 }
 

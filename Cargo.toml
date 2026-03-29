@@ -1,11 +1,11 @@
 [package]
-name = "morph-app"
+name = "greek_morph"
 version = "0.1.0"
 authors = ["unknowndavid"]
 edition = "2021"
 
 [dependencies]
-dioxus = { version = "0.7.1", features = ["router"] }
+dioxus = { version = "0.7.4", features = ["router"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 unicode-normalization = "0.1"
@@ -14,9 +14,10 @@ web-sys = { version = "0.3", features = ["Window", "Storage", "Navigator"] }
 wasm-bindgen = "0.2"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4"
+dioxus-devtools = "0.7"
 
 [build-dependencies]
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.39.0", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

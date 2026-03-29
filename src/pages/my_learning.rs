@@ -1,11 +1,9 @@
-use std::collections::HashSet;
-
 use dioxus::prelude::*;
 
 use crate::i18n::{t, UiKey};
 use crate::logic::diacritics::normalize;
 use crate::logic::paradigm::{build_verb_paradigms, mood_label, tense_label, voice_label};
-use crate::models::{FilterParams, MyLearningItem};
+use crate::models::MyLearningItem;
 use crate::router::Route;
 use crate::state::AppState;
 

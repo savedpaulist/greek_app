@@ -157,6 +157,35 @@ pub fn ParadigmTableView(lemma_id: i64) -> Element {
                     }
                 }
 
+                // ── Add to My Learning (whole verb) ──────────────────────
+                {
+                    let already_in = !state.my_learning.read().is_empty()
+                        && state.my_learning.read().iter().any(|i| i.lemma_id == lemma_id);
+                    let btn_label = if already_in {
+                        t(UiKey::MyLearningInLearning, lang.clone())
+                    } else {
+                        t(UiKey::MyLearningAddToLearning, lang.clone())
+                    };
+                    rsx! {
+                        button {
+                            class: if already_in { "paradigm-add-btn paradigm-add-btn--active paradigm-add-btn--block" } else { "paradigm-add-btn paradigm-add-btn--block" },
+                            onclick: move |_| {
+                                if already_in {
+                                    state.remove_from_my_learning(lemma_id);
+                                } else {
+                                    state.add_to_my_learning(MyLearningItem {
+                                        lemma_id,
+                                        tenses: vec![],
+                                        voices: vec![],
+                                        moods:  vec![],
+                                    });
+                                }
+                            },
+                            "{btn_label}"
+                        }
+                    }
+                }
+
                 // ── Verb filter chips ─────────────────────────────────────
                 if unique_tenses.len() > 1 || unique_voices.len() > 1 || unique_moods.len() > 1 {
                     div { class: "paradigm-verb-filter",
@@ -231,50 +260,9 @@ pub fn ParadigmTableView(lemma_id: i64) -> Element {
 
                 div { class: "verb-paradigm-blocks",
                     for table in &filtered_tables {
-                        {
-                            let tenses = table.tense_key.iter().cloned().collect::<Vec<String>>();
-                            let voices = table.voice_key.iter().cloned().collect::<Vec<String>>();
-                            let moods  = table.mood_key.iter().cloned().collect::<Vec<String>>();
-                            let already_in = {
-                                let items = state.my_learning.read();
-                                items.iter().any(|i| {
-                                    i.lemma_id == lemma_id
-                                        && i.tenses == tenses
-                                        && i.voices == voices
-                                        && i.moods  == moods
-                                })
-                            };
-                            let btn_label = if already_in {
-                                t(UiKey::MyLearningInLearning, lang.clone())
-                            } else {
-                                t(UiKey::MyLearningAddToLearning, lang.clone())
-                            };
-                            let tenses2 = tenses.clone();
-                            let voices2 = voices.clone();
-                            let moods2  = moods.clone();
-                            rsx! {
                         div { class: "verb-paradigm-block",
                             if let Some(title) = &table.title {
                                 h4 { class: "verb-paradigm-title", "{title}" }
-                            }
-                            button {
-                                class: if already_in { "paradigm-add-btn paradigm-add-btn--active paradigm-add-btn--block" } else { "paradigm-add-btn paradigm-add-btn--block" },
-                                onclick: move |_| {
-                                    if already_in {
-                                        let mut items = state.my_learning.write();
-                                        items.retain(|i| !(i.lemma_id == lemma_id && i.tenses == tenses2 && i.voices == voices2 && i.moods == moods2));
-                                        drop(items);
-                                        state.save_my_learning();
-                                    } else {
-                                        state.add_to_my_learning(MyLearningItem {
-                                            lemma_id,
-                                            tenses: tenses2.clone(),
-                                            voices: voices2.clone(),
-                                            moods:  moods2.clone(),
-                                        });
-                                    }
-                                },
-                                "{btn_label}"
                             }
                             div { class: "paradigm-table-wrapper",
                                 table { class: "paradigm-table paradigm-table--verb",
@@ -324,8 +312,6 @@ pub fn ParadigmTableView(lemma_id: i64) -> Element {
                                 }
                             }
                         }
-                            }  // closes rsx!
-                        }      // closes outer { block
                     }
                 }
                 div { class: "paradigm-legend",
