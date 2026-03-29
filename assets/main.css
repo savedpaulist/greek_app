@@ -1575,6 +1575,10 @@ body::-webkit-scrollbar {
   from { stroke-dashoffset: 100.53; }
   to   { stroke-dashoffset: 0; }
 }
+.timer-circle__fill--correct {
+  stroke: var(--correct);
+  animation-duration: 0.8s;
+}
 
 /* ── Sidebar tag/lemma filter additions ──────────────────────────────── */
 .sidebar__section-subtitle {

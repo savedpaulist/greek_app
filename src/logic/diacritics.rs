@@ -89,16 +89,28 @@ pub fn compare_greek(answer: &str, expected: &str, ignore_diacritics: bool) -> b
 /// Returns a list of (char, correct: bool) pairs for character-level diff
 /// highlighting in fill-in mode.
 pub fn diff_chars(answer: &str, expected: &str, ignore_diacritics: bool) -> Vec<(char, bool)> {
-    let a_norm: Vec<char> = normalize(answer, ignore_diacritics).chars().collect();
-    let e_norm: Vec<char> = normalize(expected, ignore_diacritics).chars().collect();
-    let a_raw: Vec<char> = answer.chars().collect();
+    // Build expected char list from the normalised+lowercased expected string.
+    // Normalising the whole expected string is safe here — it doesn't need to
+    // stay index-aligned with anything.
+    let e_norm: Vec<char> = normalize(expected.trim(), ignore_diacritics)
+        .to_lowercase()
+        .chars()
+        .collect();
 
-    a_raw
-        .iter()
+    // For each RAW character of the answer we normalise it individually so
+    // the index in `answer.chars()` always matches the index in `e_norm`.
+    // Normalising the whole answer string at once can change the char count
+    // (e.g. a length-mark combining character gets stripped, collapsing two
+    // code-points into one) and would shift every subsequent comparison.
+    answer
+        .trim()
+        .chars()
         .enumerate()
-        .map(|(i, &c)| {
-            let correct = a_norm.get(i) == e_norm.get(i);
-            (c, correct)
+        .map(|(i, c)| {
+            let c_key: String = normalize(&c.to_string(), ignore_diacritics)
+                .to_lowercase();
+            let e_key: String = e_norm.get(i).map(|ch| ch.to_string()).unwrap_or_default();
+            (c, c_key == e_key)
         })
         .collect()
 }

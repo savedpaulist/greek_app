@@ -166,46 +166,37 @@ pub fn FillInView() -> Element {
                             "{t(UiKey::FillInAnswer, lang.clone())}: {current_form.greek_form}"
                         }
 
-                        if showing_wrong {
-                            // Wrong: circle timer + skip button
-                            div { class: "fillin-auto-advance",
-                                svg {
-                                    class: "timer-circle",
-                                    view_box: "0 0 36 36",
-                                    xmlns: "http://www.w3.org/2000/svg",
-                                    circle {
-                                        class: "timer-circle__track",
-                                        cx: "18", cy: "18", r: "16",
-                                        stroke_width: "3",
-                                    }
-                                    circle {
-                                        class: "timer-circle__fill",
-                                        cx: "18", cy: "18", r: "16",
-                                        stroke_width: "3",
-                                    }
+                        // Both correct and wrong show a timer circle + skip button.
+                        // Correct: green, 800 ms. Wrong: red, 4 000 ms.
+                        div { class: "fillin-auto-advance",
+                            svg {
+                                class: "timer-circle",
+                                view_box: "0 0 36 36",
+                                xmlns: "http://www.w3.org/2000/svg",
+                                circle {
+                                    class: "timer-circle__track",
+                                    cx: "18", cy: "18", r: "16",
+                                    stroke_width: "3",
                                 }
-                                button {
-                                    class: "btn btn--ghost btn--sm",
-                                    onclick: move |_| {
-                                        *question_gen.write() += 1;
-                                        *index.write() += 1;
-                                        *submitted.write() = false;
-                                        *input_value.write() = String::new();
+                                circle {
+                                    class: if showing_wrong {
+                                        "timer-circle__fill"
+                                    } else {
+                                        "timer-circle__fill timer-circle__fill--correct"
                                     },
-                                    "{t(UiKey::FillInSkip, lang.clone())}"
+                                    cx: "18", cy: "18", r: "16",
+                                    stroke_width: "3",
                                 }
                             }
-                        } else {
-                            // Correct: manual Next button
                             button {
-                                class: "btn btn--primary",
+                                class: "btn btn--ghost btn--sm",
                                 onclick: move |_| {
                                     *question_gen.write() += 1;
                                     *index.write() += 1;
                                     *submitted.write() = false;
                                     *input_value.write() = String::new();
                                 },
-                                "{t(UiKey::FillInNext, lang.clone())}"
+                                "{t(UiKey::FillInSkip, lang.clone())}"
                             }
                         }
                     } else {
@@ -224,22 +215,21 @@ pub fn FillInView() -> Element {
                                     if ok { *session_correct.write() += 1; }
                                     *is_correct.write() = ok;
                                     *submitted.write() = true;
-                                    if !ok {
-                                        let gen = *question_gen.read();
-                                        let mut idx = index;
-                                        let mut sub = submitted;
-                                        let mut inp = input_value;
-                                        let mut qgen = question_gen;
-                                        spawn(async move {
-                                            sleep_ms(4000).await;
-                                            if *qgen.read() == gen {
-                                                *qgen.write() += 1;
-                                                *idx.write() += 1;
-                                                *sub.write() = false;
-                                                *inp.write() = String::new();
-                                            }
-                                        });
-                                    }
+                                    let delay = if ok { 800_i32 } else { 4000_i32 };
+                                    let gen = *question_gen.read();
+                                    let mut idx = index;
+                                    let mut sub = submitted;
+                                    let mut inp = input_value;
+                                    let mut qgen = question_gen;
+                                    spawn(async move {
+                                        sleep_ms(delay).await;
+                                        if *qgen.read() == gen {
+                                            *qgen.write() += 1;
+                                            *idx.write() += 1;
+                                            *sub.write() = false;
+                                            *inp.write() = String::new();
+                                        }
+                                    });
                                 }
                             },
                         }
@@ -254,22 +244,21 @@ pub fn FillInView() -> Element {
                                     if ok { *session_correct.write() += 1; }
                                     *is_correct.write() = ok;
                                     *submitted.write() = true;
-                                    if !ok {
-                                        let gen = *question_gen.read();
-                                        let mut idx = index;
-                                        let mut sub = submitted;
-                                        let mut inp = input_value;
-                                        let mut qgen = question_gen;
-                                        spawn(async move {
-                                            sleep_ms(4000).await;
-                                            if *qgen.read() == gen {
-                                                *qgen.write() += 1;
-                                                *idx.write() += 1;
-                                                *sub.write() = false;
-                                                *inp.write() = String::new();
-                                            }
-                                        });
-                                    }
+                                    let delay = if ok { 800_i32 } else { 4000_i32 };
+                                    let gen = *question_gen.read();
+                                    let mut idx = index;
+                                    let mut sub = submitted;
+                                    let mut inp = input_value;
+                                    let mut qgen = question_gen;
+                                    spawn(async move {
+                                        sleep_ms(delay).await;
+                                        if *qgen.read() == gen {
+                                            *qgen.write() += 1;
+                                            *idx.write() += 1;
+                                            *sub.write() = false;
+                                            *inp.write() = String::new();
+                                        }
+                                    });
                                 },
                                 "{t(UiKey::FillInSubmit, lang.clone())}"
                             }
