@@ -70,8 +70,8 @@ pub fn normalize(s: &str, strip: bool) -> String {
 /// The leading definite article in `expected` is optional — the answer is
 /// accepted both with and without it.
 pub fn compare_greek(answer: &str, expected: &str, ignore_diacritics: bool) -> bool {
-    let a = normalize(answer.trim(), ignore_diacritics);
-    let e = normalize(expected.trim(), ignore_diacritics);
+    let a = normalize(answer.trim(), ignore_diacritics).to_lowercase();
+    let e = normalize(expected.trim(), ignore_diacritics).to_lowercase();
     if a == e {
         return true;
     }
