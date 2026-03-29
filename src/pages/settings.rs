@@ -268,24 +268,25 @@ pub fn SettingsPanel() -> Element {
 
 #[component]
 fn InstallSection(lang: crate::state::settings::UiLanguage) -> Element {
-    // Detect on mount whether the PWA install prompt is available.
-    // pwaCanInstall() is exposed by pwa-install.js and returns true when:
-    //   - not already running as a standalone PWA, AND
-    //   - either a deferred Chrome/Android prompt is captured, or it's iOS Safari.
-    let mut can_install = use_signal(|| false);
-
-    use_effect(move || {
+    // Show only when NOT running as an installed PWA (standalone/fullscreen/minimal-ui).
+    let is_standalone = {
         #[cfg(target_arch = "wasm32")]
         {
-            let result = js_sys::eval("!!(window.pwaCanInstall && window.pwaCanInstall())")
-                .ok()
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            can_install.set(result);
+            js_sys::eval(
+                "window.matchMedia('(display-mode: standalone)').matches \
+                 || window.matchMedia('(display-mode: fullscreen)').matches \
+                 || window.matchMedia('(display-mode: minimal-ui)').matches \
+                 || window.navigator.standalone === true"
+            )
+            .ok()
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
         }
-    });
+        #[cfg(not(target_arch = "wasm32"))]
+        { false }
+    };
 
-    if !can_install() {
+    if is_standalone {
         return rsx! {};
     }
 
