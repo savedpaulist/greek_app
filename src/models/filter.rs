@@ -1,5 +1,41 @@
 use serde::{Deserialize, Serialize};
 
+/// A single entry in the "My Learning" curated study list.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct MyLearningItem {
+    pub lemma_id: i64,
+    /// For verbs/participles: restrict to these tenses. Empty = all.
+    pub tenses: Vec<String>,
+    /// For verbs/participles: restrict to these voices. Empty = all.
+    pub voices: Vec<String>,
+    /// For verbs/participles: restrict to these moods. Empty = all.
+    pub moods: Vec<String>,
+}
+
+impl MyLearningItem {
+    pub fn matches_form(&self, form: &crate::models::form::Form) -> bool {
+        if form.lemma_id != self.lemma_id {
+            return false;
+        }
+        if !self.tenses.is_empty()
+            && !form.tense_tag.as_ref().map_or(false, |t| self.tenses.contains(t))
+        {
+            return false;
+        }
+        if !self.voices.is_empty()
+            && !form.voice_tag.as_ref().map_or(false, |v| self.voices.contains(v))
+        {
+            return false;
+        }
+        if !self.moods.is_empty()
+            && !form.mood_tag.as_ref().map_or(false, |m| self.moods.contains(m))
+        {
+            return false;
+        }
+        true
+    }
+}
+
 /// Filter parameters for selecting forms to study.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct FilterParams {

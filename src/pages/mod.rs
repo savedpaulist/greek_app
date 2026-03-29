@@ -1,4 +1,5 @@
 pub mod home;
+pub mod my_learning;
 pub mod paradigm_builder;
 pub mod progress;
 pub mod settings;

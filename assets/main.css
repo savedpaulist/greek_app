@@ -466,6 +466,224 @@ body::-webkit-scrollbar {
 }
 .home-builder-link:hover { opacity: 0.8; }
 
+/* ── filter-chip aliases (chip with filter semantics) ── */
+.filter-chip {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 36px;
+}
+.filter-chip:hover:not(:disabled) { border-color: var(--accent); }
+.filter-chip--active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.filter-chip:disabled { opacity: 0.4; cursor: default; }
+
+/* ── My Learning container ────────────────────────────── */
+.my-learning {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+.my-learning__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.my-learning__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0;
+}
+.my-learning__toggle {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  min-height: 30px;
+}
+.my-learning__desc {
+  font-size: 0.82rem;
+  color: var(--fg2);
+  margin: 0 0 10px;
+}
+.my-learning__list {
+  list-style: none;
+  padding: 10;
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.my-learning__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+.my-learning__lemma {
+  font-weight: 600;
+  color: var(--fg);
+  flex: 1;
+  min-width: 0;
+  font-family: var(--greek-font, serif);
+}
+.my-learning__pos {
+  font-size: 0.72rem;
+  color: var(--fg2);
+}
+.my-learning__tags {
+  font-size: 0.75rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.my-learning__remove {
+  background: none;
+  border: none;
+  color: var(--fg2);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.my-learning__remove:hover { color: var(--red); background: var(--bg2); }
+.my-learning__add-btn { margin-top: 4px; }
+
+/* Grouped verb display */
+.my-learning__group {
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.my-learning__group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.my-learning__sub-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.my-learning__sub-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.my-learning__sub-item:last-child { border-bottom: none; }
+.my-learning__sub-item .my-learning__tags {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--fg2);
+}
+.my-learning__add-panel {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.my-learning__search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+.my-learning__search:focus { outline: none; border-color: var(--accent); }
+.my-learning__results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.my-learning__pick {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--fg);
+}
+.my-learning__pick:hover { background: var(--bg3); }
+.my-learning__pick:last-child { border-bottom: none; }
+.my-learning__pick__greek { font-family: var(--greek-font, serif); font-weight: 600; }
+.my-learning__pick__pos { font-size: 0.75rem; color: var(--fg2); }
+.my-learning__pick__trans { font-size: 0.8rem; color: var(--fg2); }
+
+.my-learning__verb-config {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.my-learning__verb-config__heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 4px;
+  font-family: var(--greek-font, serif);
+}
+.my-learning__verb-config__section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.my-learning__verb-config__label {
+  font-size: 0.75rem;
+  color: var(--fg2);
+  min-width: 70px;
+}
+.my-learning__verb-config__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* My Learning filter chip in sidebar */
+.filter-my-learning {
+  margin-bottom: 12px;
+}
+.filter-chip--my-learning {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  justify-content: flex-start;
+}
+
 /* Paradigm builder page */
 .paradigm-builder-page {
   padding-top: 16px;
@@ -709,6 +927,43 @@ body::-webkit-scrollbar {
 .paradigm-cell--empty    { color: var(--fg2); }
 .paradigm-cell--correct  { background: color-mix(in srgb, var(--correct) 28%, var(--bg2)); border-color: var(--correct); }
 .paradigm-cell--wrong    { background: color-mix(in srgb, var(--wrong)   28%, var(--bg2)); border-color: var(--wrong); }
+
+/* ── Add to My Learning button (paradigm view) ──────────────────────────── */
+.paradigm-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.paradigm-add-btn--block {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+.paradigm-add-btn:hover {
+  background: var(--bg3);
+  color: var(--fg);
+  border-color: var(--accent);
+}
+.paradigm-add-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.paradigm-add-btn--active:hover {
+  background: var(--accent2);
+  border-color: var(--accent2);
+}
 
 .paradigm-legend {
   display: flex;

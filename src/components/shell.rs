@@ -66,6 +66,33 @@ pub fn Shell() -> Element {
             "data-settings-open": "{settings_open}",
             style: "--greek-font: {greek_font};",
             class: "app-shell",
+            // Hidden swipe control buttons — clicked programmatically by swipe.js
+            button {
+                id: "swipe-open-filters",
+                style: "display:none;",
+                onclick: move |_| {
+                    *state.filters_open.write() = true;
+                    if is_overlay_layout() { *state.settings_open.write() = false; }
+                }
+            }
+            button {
+                id: "swipe-close-filters",
+                style: "display:none;",
+                onclick: move |_| { *state.filters_open.write() = false; }
+            }
+            button {
+                id: "swipe-open-settings",
+                style: "display:none;",
+                onclick: move |_| {
+                    *state.settings_open.write() = true;
+                    if is_overlay_layout() { *state.filters_open.write() = false; }
+                }
+            }
+            button {
+                id: "swipe-close-settings",
+                style: "display:none;",
+                onclick: move |_| { *state.settings_open.write() = false; }
+            }
             TopBar {}
             crate::components::sidebar::Sidebar {}
             main {

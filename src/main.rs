@@ -18,6 +18,7 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const THEMES_CSS: Asset = asset!("/assets/styles/themes.css");
 const PWA_INSTALL_JS: Asset = asset!("/assets/pwa-install.js");
+const SWIPE_JS: Asset = asset!("/assets/swipe.js");
 const GOOGLE_FONTS: &str = "https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Literata:wght@400;600;700&family=Lora:wght@400;600;700&family=Noto+Sans:wght@400;600;700&family=Noto+Serif:wght@400;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap";
 
 const SW_REGISTER: &str = r#"
@@ -55,6 +56,8 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: THEMES_CSS }
         document::Script { dangerous_inner_html: SW_REGISTER }
+        document::Script { src: PWA_INSTALL_JS }
+        document::Script { src: SWIPE_JS }
         Router::<Route> {}
     }
 }

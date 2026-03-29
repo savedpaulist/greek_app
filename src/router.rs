@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 
 use crate::pages::{
     home::HomePage as Home,
+    my_learning::MyLearningPage as MyLearning,
     paradigm_builder::ParadigmBuilderEditPage as ParadigmBuilderEdit,
     paradigm_builder::ParadigmBuilderPage as ParadigmBuilder,
     progress::ProgressPage as Progress,
@@ -29,6 +30,8 @@ pub enum Route {
     Progress {},
     #[route("/settings")]
     Settings {},
+    #[route("/my-learning")]
+    MyLearning {},
     #[route("/paradigm-builder")]
     ParadigmBuilder {},
     #[route("/paradigm-builder/:lemma_id")]

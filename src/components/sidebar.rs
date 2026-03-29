@@ -102,6 +102,25 @@ fn FilterPanel() -> Element {
 
     rsx! {
         section { class: "sidebar__section",
+            // My Learning filter toggle
+            {
+                let ml_active = *state.my_learning_active.read();
+                let ml_empty = state.my_learning.read().is_empty();
+                rsx! {
+                    div { class: "filter-my-learning",
+                        button {
+                            class: if ml_active { "filter-chip filter-chip--active filter-chip--my-learning" } else { "filter-chip filter-chip--my-learning" },
+                            disabled: ml_empty,
+                            onclick: move |_| {
+                                let new_val = !*state.my_learning_active.read();
+                                *state.my_learning_active.write() = new_val;
+                            },
+                            "{t(UiKey::MyLearningFilterChip, lang.clone())}"
+                        }
+                    }
+                }
+            }
+
             h3 { class: "sidebar__section-title", "{t(UiKey::FiltersPos, lang.clone())}" }
             div { class: "filter-chips",
                 for (value, label) in [

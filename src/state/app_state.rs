@@ -8,13 +8,14 @@ use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use crate::models::{Category, FilterParams, Form, Lemma, ProgressRecord, Session, Tag};
+use crate::models::{Category, FilterParams, Form, Lemma, MyLearningItem, ProgressRecord, Session, Tag};
 use crate::state::settings::Settings;
 
 const PROGRESS_KEY: &str = "sfodra_progress_v1";
 const SETTINGS_KEY: &str = "sfodra_settings_v1";
 const SESSIONS_KEY: &str = "sfodra_sessions_v1";
 const CUSTOM_DATA_KEY: &str = "sfodra_custom_data_v1";
+const MY_LEARNING_KEY: &str = "sfodra_my_learning_v1";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CustomData {
@@ -155,6 +156,10 @@ pub struct AppState {
     pub filters_open: Signal<bool>,
     /// Active settings drawer state
     pub settings_open: Signal<bool>,
+    /// Curated "My Learning" list of lemmas/sub-paradigms.
+    pub my_learning: Signal<Vec<MyLearningItem>>,
+    /// Whether the "My Learning" filter is currently active.
+    pub my_learning_active: Signal<bool>,
 }
 
 impl AppState {
@@ -181,6 +186,10 @@ impl AppState {
             .and_then(|s| serde_json::from_str(&s).ok())
             .unwrap_or_default();
 
+        let my_learning: Vec<MyLearningItem> = ls_get(MY_LEARNING_KEY)
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default();
+
         forms.extend(custom_data.forms.clone());
         lemmas.extend(custom_data.lemmas.clone());
 
@@ -197,6 +206,8 @@ impl AppState {
             filter: Signal::new(FilterParams::default()),
             filters_open: Signal::new(false),
             settings_open: Signal::new(false),
+            my_learning: Signal::new(my_learning),
+            my_learning_active: Signal::new(true),
         }
     }
 
@@ -220,6 +231,57 @@ impl AppState {
         if let Ok(json) = serde_json::to_string(&*self.sessions.read()) {
             ls_set(SESSIONS_KEY, &json);
         }
+    }
+
+    pub fn save_my_learning(&self) {
+        if let Ok(json) = serde_json::to_string(&*self.my_learning.read()) {
+            ls_set(MY_LEARNING_KEY, &json);
+        }
+    }
+
+    pub fn add_to_my_learning(&mut self, item: MyLearningItem) {
+        let mut list = self.my_learning.write();
+        let already = list.iter().any(|i| {
+            i.lemma_id == item.lemma_id
+                && i.tenses == item.tenses
+                && i.voices == item.voices
+                && i.moods  == item.moods
+        });
+        if !already {
+            list.push(item);
+        }
+        drop(list);
+        self.save_my_learning();
+    }
+
+    pub fn remove_from_my_learning(&mut self, lemma_id: i64) {
+        self.my_learning.write().retain(|i| i.lemma_id != lemma_id);
+        self.save_my_learning();
+    }
+
+    pub fn remove_learning_item(&mut self, item: &MyLearningItem) {
+        let lemma_id = item.lemma_id;
+        let tenses = item.tenses.clone();
+        let voices = item.voices.clone();
+        let moods  = item.moods.clone();
+        self.my_learning.write().retain(|i| {
+            !(i.lemma_id == lemma_id && i.tenses == tenses && i.voices == voices && i.moods == moods)
+        });
+        self.save_my_learning();
+    }
+
+    /// Count of paradigm forms that match the current My Learning list.
+    pub fn my_learning_forms_count(&self) -> usize {
+        let items = self.my_learning.read();
+        if items.is_empty() {
+            return 0;
+        }
+        let include_dual = self.settings.read().include_dual;
+        self.forms.read().iter().filter(|f| {
+            if !f.is_paradigm_form() { return false; }
+            if !include_dual && f.number_tag.as_deref() == Some("du") { return false; }
+            items.iter().any(|item| item.matches_form(f))
+        }).count()
     }
 
     pub fn save_custom_data(&self) {
@@ -252,7 +314,7 @@ impl AppState {
         let filter = self.filter.read();
         let progress = self.progress.read();
         let include_dual = self.settings.read().include_dual;
-        self.forms
+        let forms: Vec<Form> = self.forms
             .read()
             .iter()
             .filter(|f| {
@@ -283,7 +345,21 @@ impl AppState {
                 true
             })
             .cloned()
-            .collect()
+            .collect();
+        drop(filter);
+        drop(progress);
+
+        // Apply My Learning filter as a post-filter step.
+        if *self.my_learning_active.read() {
+            let items = self.my_learning.read();
+            if !items.is_empty() {
+                return forms
+                    .into_iter()
+                    .filter(|f| items.iter().any(|item| item.matches_form(f)))
+                    .collect();
+            }
+        }
+        forms
     }
 
     pub fn lemma_has_paradigm(&self, lemma_id: i64) -> bool {
