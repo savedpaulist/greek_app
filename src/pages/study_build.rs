@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use dioxus::prelude::*;
 
 use crate::i18n::{t, UiKey};
+use crate::logic::diacritics::similarity_score;
 use crate::logic::paradigm::{build_nominal_paradigm, build_verb_paradigm};
 use crate::models::form::Lemma;
 use crate::state::AppState;
@@ -146,22 +147,55 @@ fn BuildGame(lemma_id: i64, on_back: EventHandler<()>) -> Element {
     let choices: Vec<(i64, String)> = if let Some(target_id) = maybe_form_id {
         let target = forms.iter().find(|f| f.id == target_id).cloned();
         if let Some(target_form) = target {
-            // Get distractors: same pos, different text
+            // Pick 3 distractors ranked by spelling similarity to the target:
+            // first accent-only differences, then other diacritics, then 1
+            // letter off, 2 letters, etc. Prefer forms from the same lemma
+            // (the current paradigm); fall back to same-POS forms from other
+            // lemmas if we can't find enough.
+            let all_forms = state.forms.read();
             let mut seen = std::collections::HashSet::new();
             seen.insert(target_form.greek_form.clone());
-            let mut distractors: Vec<_> = state.forms.read().iter()
+
+            let mut same_lemma: Vec<(i64, String, (usize, usize))> = all_forms.iter()
                 .filter(|f| {
                     f.id != target_form.id
-                        && f.pos == target_form.pos
+                        && f.lemma_id == target_form.lemma_id
                         && f.greek_form != target_form.greek_form
-                        && seen.insert(f.greek_form.clone())
                 })
-                .take(3)
-                .map(|f| (f.id, f.greek_form.clone()))
+                .map(|f| (f.id, f.greek_form.clone(), similarity_score(&f.greek_form, &target_form.greek_form)))
                 .collect();
+            same_lemma.sort_by(|a, b| a.2.cmp(&b.2).then_with(|| a.0.cmp(&b.0)));
+
+            let mut picks: Vec<(i64, String)> = Vec::with_capacity(3);
+            for (id, form, _) in &same_lemma {
+                if picks.len() >= 3 { break; }
+                if seen.insert(form.clone()) {
+                    picks.push((*id, form.clone()));
+                }
+            }
+
+            if picks.len() < 3 {
+                let mut other_lemmas: Vec<(i64, String, (usize, usize))> = all_forms.iter()
+                    .filter(|f| {
+                        f.id != target_form.id
+                            && f.lemma_id != target_form.lemma_id
+                            && f.pos == target_form.pos
+                            && f.greek_form != target_form.greek_form
+                    })
+                    .map(|f| (f.id, f.greek_form.clone(), similarity_score(&f.greek_form, &target_form.greek_form)))
+                    .collect();
+                other_lemmas.sort_by(|a, b| a.2.cmp(&b.2).then_with(|| a.0.cmp(&b.0)));
+                for (id, form, _) in other_lemmas {
+                    if picks.len() >= 3 { break; }
+                    if seen.insert(form.clone()) {
+                        picks.push((id, form));
+                    }
+                }
+            }
+
             let mut choices = vec![(target_form.id, target_form.greek_form.clone())];
-            choices.append(&mut distractors);
-            // Shuffle deterministically
+            choices.extend(picks);
+            // Shuffle deterministically so the correct answer isn't always first.
             choices.sort_by_key(|(id, _)| (*id as u64).wrapping_mul(6364136223846793005));
             choices
         } else { vec![] }

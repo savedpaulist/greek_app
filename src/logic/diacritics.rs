@@ -115,6 +115,67 @@ pub fn diff_chars(answer: &str, expected: &str, ignore_diacritics: bool) -> Vec<
         .collect()
 }
 
+/// Strip only accent marks (acute, grave, circumflex/perispomeni), leaving
+/// other diacritics (breathings, iota subscript, diaeresis) in place.
+/// Length marks are also stripped (they are never required in answers).
+pub fn strip_only_accents(s: &str) -> String {
+    let nfd: String = s.nfd().collect();
+    nfd.chars()
+        .filter(|c| !is_length_mark(*c) && !is_accent_mark(*c))
+        .collect::<String>()
+        .nfc()
+        .collect()
+}
+
+/// Classic Levenshtein edit distance on char slices.
+pub fn levenshtein(a: &str, b: &str) -> usize {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    let (n, m) = (a.len(), b.len());
+    if n == 0 { return m; }
+    if m == 0 { return n; }
+    let mut prev: Vec<usize> = (0..=m).collect();
+    let mut curr: Vec<usize> = vec![0; m + 1];
+    for i in 1..=n {
+        curr[0] = i;
+        for j in 1..=m {
+            let cost = if a[i - 1] == b[j - 1] { 0 } else { 1 };
+            curr[j] = (prev[j] + 1)
+                .min(curr[j - 1] + 1)
+                .min(prev[j - 1] + cost);
+        }
+        std::mem::swap(&mut prev, &mut curr);
+    }
+    prev[m]
+}
+
+/// Similarity score between a candidate Greek form and the correct answer.
+/// Lower = more similar. Tuple is sorted lexicographically:
+///   (base-letter edit distance, non-accent diacritic distance)
+/// So `(0, 0)` means identical letters and only accents differ (best tier for
+/// a wrong-but-very-similar distractor).
+pub fn similarity_score(candidate: &str, correct: &str) -> (usize, usize) {
+    let cand_letters = normalize(candidate, true).to_lowercase();
+    let corr_letters = normalize(correct, true).to_lowercase();
+    let d_letters = levenshtein(&cand_letters, &corr_letters);
+
+    let cand_no_accent = strip_only_accents(candidate).to_lowercase();
+    let corr_no_accent = strip_only_accents(correct).to_lowercase();
+    let d_no_accent = levenshtein(&cand_no_accent, &corr_no_accent);
+
+    // d_no_accent >= d_letters always (stripping less info can't decrease edits).
+    let diacritic_only = d_no_accent.saturating_sub(d_letters);
+    (d_letters, diacritic_only)
+}
+
+fn is_accent_mark(c: char) -> bool {
+    matches!(c as u32,
+        0x0300  // COMBINING GRAVE ACCENT
+        | 0x0301  // COMBINING ACUTE ACCENT
+        | 0x0342  // COMBINING GREEK PERISPOMENI (circumflex)
+    )
+}
+
 fn is_length_mark(c: char) -> bool {
     matches!(c as u32,
         0x0304  // COMBINING MACRON  (long vowel: ᾱ, ῑ, ῡ)

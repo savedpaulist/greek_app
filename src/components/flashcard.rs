@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use dioxus::prelude::*;
 
 use crate::i18n::{t, UiKey};
+use crate::logic::diacritics::similarity_score;
 use crate::logic::sm2::quality_from_answer;
 use crate::models::Form;
 use crate::state::AppState;
@@ -362,32 +363,60 @@ fn fresh_shuffle_seed() -> u64 {
 }
 
 /// Pick `n` forms (1 correct + n-1 distractors) for multiple choice.
-/// Uses only forms from the same lemma/paradigm as the asked form.
+/// Distractors are ranked by *spelling similarity* to `correct` — first come
+/// forms that differ only by accents, then by other diacritics, then by 1
+/// letter, 2 letters, and so on. Same-lemma forms are always preferred; if
+/// the same-lemma pool is exhausted we fall back to other forms across the
+/// whole `forms` slice so the learner still sees `n` options.
 fn build_same_lemma_choices(forms: &[Form], correct: &Form, n: usize) -> Vec<Form> {
     let mut seen: HashSet<String> = HashSet::new();
     seen.insert(correct.greek_form.clone());
 
-    let mut distractors: Vec<Form> = forms
+    let rank = |a: &Form, b: &Form| {
+        let sa = similarity_score(&a.greek_form, &correct.greek_form);
+        let sb = similarity_score(&b.greek_form, &correct.greek_form);
+        sa.cmp(&sb).then_with(|| a.id.cmp(&b.id))
+    };
+
+    let mut same_lemma: Vec<Form> = forms
         .iter()
         .filter(|f| {
-            if f.id == correct.id { return false; }
-            if f.lemma_id != correct.lemma_id { return false; }
-            if f.greek_form == correct.greek_form { return false; }
-            true
+            f.id != correct.id
+                && f.lemma_id == correct.lemma_id
+                && f.greek_form != correct.greek_form
         })
         .cloned()
         .collect();
-
-    distractors.sort_by_key(|f| {
-        (f.id as u64).wrapping_mul(2654435761)
-            ^ (correct.id as u64).wrapping_mul(1000003)
-    });
+    same_lemma.sort_by(rank);
 
     let mut choices = vec![correct.clone()];
-    for d in distractors {
-        if choices.len() >= n { break; }
+    for d in &same_lemma {
+        if choices.len() >= n {
+            break;
+        }
         if seen.insert(d.greek_form.clone()) {
-            choices.push(d);
+            choices.push(d.clone());
+        }
+    }
+
+    if choices.len() < n {
+        let mut fallback: Vec<Form> = forms
+            .iter()
+            .filter(|f| {
+                f.id != correct.id
+                    && f.lemma_id != correct.lemma_id
+                    && f.greek_form != correct.greek_form
+            })
+            .cloned()
+            .collect();
+        fallback.sort_by(rank);
+        for d in fallback {
+            if choices.len() >= n {
+                break;
+            }
+            if seen.insert(d.greek_form.clone()) {
+                choices.push(d);
+            }
         }
     }
 
@@ -395,40 +424,78 @@ fn build_same_lemma_choices(forms: &[Form], correct: &Form, n: usize) -> Vec<For
     choices
 }
 
+/// Count how many grammatical-tag attributes differ between two forms.
+/// Lower = more similar grammar (useful for ranking distractors in the
+/// forward-mode "pick the right grammar label" quiz).
+fn grammar_tag_distance(a: &Form, b: &Form) -> usize {
+    let pairs: [(&Option<String>, &Option<String>); 8] = [
+        (&a.case_tag, &b.case_tag),
+        (&a.number_tag, &b.number_tag),
+        (&a.gender_tag, &b.gender_tag),
+        (&a.tense_tag, &b.tense_tag),
+        (&a.voice_tag, &b.voice_tag),
+        (&a.mood_tag, &b.mood_tag),
+        (&a.person_tag, &b.person_tag),
+        (&a.degree_tag, &b.degree_tag),
+    ];
+    pairs.iter().filter(|(x, y)| x != y).count()
+}
+
+/// Pick `n` forms whose *grammar labels* are distinct from `correct`, ranked
+/// by grammar-tag similarity (fewer differing tags first). Falls back to the
+/// whole pool if the same-lemma pool runs dry.
 fn build_same_lemma_grammar_choices(forms: &[Form], correct: &Form, n: usize) -> Vec<Form> {
     let mut seen: HashSet<String> = HashSet::new();
     seen.insert(correct.grammar_label_ru());
 
-    let mut distractors: Vec<Form> = forms
+    let rank = |a: &Form, b: &Form| {
+        let da = grammar_tag_distance(a, correct);
+        let db = grammar_tag_distance(b, correct);
+        da.cmp(&db).then_with(|| a.id.cmp(&b.id))
+    };
+
+    let mut same_lemma: Vec<Form> = forms
         .iter()
         .filter(|f| {
-            if f.id == correct.id {
-                return false;
-            }
-            if f.lemma_id != correct.lemma_id {
-                return false;
-            }
-
-            let grammar = f.grammar_label_ru();
-            grammar != correct.grammar_label_ru()
+            f.id != correct.id
+                && f.lemma_id == correct.lemma_id
+                && f.grammar_label_ru() != correct.grammar_label_ru()
         })
         .cloned()
         .collect();
-
-    distractors.sort_by_key(|f| {
-        (f.id as u64).wrapping_mul(2654435761)
-            ^ (correct.id as u64).wrapping_mul(1000003)
-    });
+    same_lemma.sort_by(rank);
 
     let mut choices = vec![correct.clone()];
-    for distractor in distractors {
+    for d in &same_lemma {
         if choices.len() >= n {
             break;
         }
-
-        let grammar = distractor.grammar_label_ru();
+        let grammar = d.grammar_label_ru();
         if seen.insert(grammar) {
-            choices.push(distractor);
+            choices.push(d.clone());
+        }
+    }
+
+    if choices.len() < n {
+        let mut fallback: Vec<Form> = forms
+            .iter()
+            .filter(|f| {
+                f.id != correct.id
+                    && f.lemma_id != correct.lemma_id
+                    && f.pos == correct.pos
+                    && f.grammar_label_ru() != correct.grammar_label_ru()
+            })
+            .cloned()
+            .collect();
+        fallback.sort_by(rank);
+        for d in fallback {
+            if choices.len() >= n {
+                break;
+            }
+            let grammar = d.grammar_label_ru();
+            if seen.insert(grammar) {
+                choices.push(d);
+            }
         }
     }
 

@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "SelfHost": {
+      "source": {
+        "source": "github",
+        "repo": "lywa1998/self-host-claude-marketplace"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "rust-skills@SelfHost": true
+  }
+}
